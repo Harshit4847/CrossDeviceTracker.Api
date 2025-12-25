@@ -1,0 +1,18 @@
+[
+  {
+    "ContainingType": "CrossDeviceTracker.Api.Controllers.TimeLogsController",
+    "Method": "CreateTimeLog",
+    "RelativePath": "api/timelogs",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "CrossDeviceTracker.Api.Models.DTOs.CreateTimeLogRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  }
+]
