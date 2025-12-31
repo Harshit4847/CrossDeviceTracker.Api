@@ -1,5 +1,7 @@
-using Microsoft.AspNetCore.Mvc;
 using CrossDeviceTracker.Api.Models.DTOs;
+using CrossDeviceTracker.Api.Services;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace CrossDeviceTracker.Api.Controllers
 {
@@ -7,33 +9,36 @@ namespace CrossDeviceTracker.Api.Controllers
     [Route("api/timelogs")]
     public class TimeLogsController : ControllerBase
     {
-        // For now, no service yet – we’ll add it next
-        public TimeLogsController()
+        private readonly ITimeLogService _timeLogService;
+        public TimeLogsController(ITimeLogService timeLogService)
         {
+            _timeLogService = timeLogService;
         }
 
         [HttpPost]
         public IActionResult CreateTimeLog([FromBody] CreateTimeLogRequest request)
         {
-            // TEMP response (until service is added)
-            var response = new TimeLogResponse
+            if(request.StartTime > DateTime.UtcNow)
             {
-                Id = Guid.NewGuid(),
-                UserId = request.UserId,
-                DeviceId = request.DeviceId,
-                AppName = request.AppName,
-                StartTime = request.StartTime,
-                EndTime = request.StartTime.AddSeconds(request.DurationSeconds),
-                DurationSeconds = request.DurationSeconds,
-                CreatedAt = DateTime.UtcNow
-            };
+                return BadRequest("StartTime cannot be in the future");
+            }
+            var response = _timeLogService.CreateTimeLog(request);
 
-            return Ok(new
+
+            return Ok(response);
+        }
+
+        [HttpGet("user/{userId}")]
+        public IActionResult GetTimeLogsForUser(Guid userId)
+        {
+
+            if (userId == Guid.Empty)
             {
-                success = true,
-                message = "Time log created successfully",
-                data = response
-            });
+                return BadRequest("UserId is empty / invalid");
+            }
+            var response = _timeLogService.GetTimeLogsForUser(userId);
+
+            return Ok(response);
         }
     }
 }

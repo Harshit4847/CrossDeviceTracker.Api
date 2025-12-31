@@ -8,6 +8,8 @@ namespace CrossDeviceTracker.Api.Models.Entities
 
         public Guid UserId { get; set; }
 
+        public Guid DeviceId { get; set; }
+
         public string AppName { get; set; } = string.Empty;
 
         public DateTime StartTime { get; set; }

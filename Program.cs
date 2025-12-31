@@ -1,4 +1,7 @@
+using CrossDeviceTracker.Api.Services;
 using Microsoft.AspNetCore.Builder; // Add this using directive
+using CrossDeviceTracker.Api.Data;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,6 +11,11 @@ builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddScoped<ITimeLogService, TimeLogService>();
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
+);
+
 
 var app = builder.Build();
 

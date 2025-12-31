@@ -4,7 +4,8 @@ namespace CrossDeviceTracker.Api.Services
 {
     public interface ITimeLogService
     {
-        List<TimeLogResponse> GetTimeLogsForUser(int userId);
+        List<TimeLogResponse> GetTimeLogsForUser(Guid userId);
+        TimeLogResponse CreateTimeLog(CreateTimeLogRequest request);
     }
 }
 
