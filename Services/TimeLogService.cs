@@ -14,31 +14,51 @@ namespace CrossDeviceTracker.Api.Services
             _context = context;
         }
 
-        public List<TimeLogResponse> GetTimeLogsForUser(Guid userId)
+        public PaginatedTimeLogsResponse GetTimeLogsForUser(Guid userId, int? limit, string? cursor)
         {
-            var timeLogs = _context.TimeLogs
-                       .Where(t => t.UserId == userId)
-                       .ToList();
-            
-            List<TimeLogResponse> responses = new List<TimeLogResponse>();
+            //limit logic
 
-            foreach (var timeLog in timeLogs)
+            int maxLimit = 50;
+            int defaultLimit = 20;
+
+            int finalLimit;
+
+            if (!limit.HasValue)
             {
-                responses.Add(new TimeLogResponse
-                {
-                    Id = timeLog.Id,
-                    UserId = timeLog.UserId,
-                    CreatedAt = timeLog.CreatedAt,
-                    AppName = timeLog.AppName,
-                    DeviceId = timeLog.DeviceId,
-                    StartTime = timeLog.StartTime,
-                    EndTime = timeLog.EndTime,
-                    DurationSeconds = timeLog.DurationSeconds
-                });
+                finalLimit = defaultLimit;
             }
-            Console.WriteLine(_context.Database.GetConnectionString());
+            else if (limit.Value > maxLimit)
+            {
+                finalLimit = maxLimit;
+            }
+            else
+            {
+                finalLimit = limit.Value;
+            }
 
-            return responses;
+
+            //var timeLogs = _context.TimeLogs
+            //           .Where(t => t.UserId == userId)
+            //           .ToList();
+
+            //List<TimeLogResponse> responses = new List<TimeLogResponse>();
+
+            //foreach (var timeLog in timeLogs)
+            //{
+            //    responses.Add(new TimeLogResponse
+            //    {
+            //        Id = timeLog.Id,
+            //        UserId = timeLog.UserId,
+            //        CreatedAt = timeLog.CreatedAt,
+            //        AppName = timeLog.AppName,
+            //        DeviceId = timeLog.DeviceId,
+            //        StartTime = timeLog.StartTime,
+            //        EndTime = timeLog.EndTime,
+            //        DurationSeconds = timeLog.DurationSeconds
+            //    });
+            //}
+
+            return new PaginatedTimeLogsResponse();
         }
 
         public TimeLogResponse CreateTimeLog(CreateTimeLogRequest request)
