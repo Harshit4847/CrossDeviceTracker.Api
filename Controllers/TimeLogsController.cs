@@ -2,6 +2,7 @@ using CrossDeviceTracker.Api.Models.DTOs;
 using CrossDeviceTracker.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
 
 namespace CrossDeviceTracker.Api.Controllers
 {
@@ -50,7 +51,7 @@ namespace CrossDeviceTracker.Api.Controllers
         }
 
         [HttpGet("user/{userId}")]
-        public IActionResult GetTimeLogsForUser(Guid userId)
+        public IActionResult GetTimeLogsForUser(Guid userId , int? limit, DateTime? cursor)
         {
 
             if (userId == Guid.Empty)
@@ -59,7 +60,7 @@ namespace CrossDeviceTracker.Api.Controllers
             }
             
 
-            var response = _timeLogService.GetTimeLogsForUser(userId);
+            var response = _timeLogService.GetTimeLogsForUser(userId, limit, cursor);
 
             return Ok(response);
         }

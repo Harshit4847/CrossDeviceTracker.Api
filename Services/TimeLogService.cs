@@ -1,7 +1,9 @@
 ﻿using CrossDeviceTracker.Api.Data;
 using CrossDeviceTracker.Api.Models.DTOs;
 using CrossDeviceTracker.Api.Models.Entities;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
+using System.Linq;
 
 namespace CrossDeviceTracker.Api.Services
 {
@@ -14,7 +16,7 @@ namespace CrossDeviceTracker.Api.Services
             _context = context;
         }
 
-        public PaginatedTimeLogsResponse GetTimeLogsForUser(Guid userId, int? limit, string? cursor)
+        public PaginatedTimeLogsResponse GetTimeLogsForUser(Guid userId, int? limit, DateTime? cursor)
         {
             //limit logic
 
@@ -37,28 +39,43 @@ namespace CrossDeviceTracker.Api.Services
             }
 
 
-            //var timeLogs = _context.TimeLogs
-            //           .Where(t => t.UserId == userId)
-            //           .ToList();
+            var timeLogs = _context.TimeLogs.AsNoTracking()
+                       .Where(t => t.UserId == userId 
+                            && (cursor == null || t.StartTime < cursor))
+                       .OrderByDescending(t => t.StartTime)
+                        .Take(finalLimit + 1)
+                        .ToList();
 
-            //List<TimeLogResponse> responses = new List<TimeLogResponse>();
+            bool hasMore = timeLogs.Count > finalLimit;
 
-            //foreach (var timeLog in timeLogs)
-            //{
-            //    responses.Add(new TimeLogResponse
-            //    {
-            //        Id = timeLog.Id,
-            //        UserId = timeLog.UserId,
-            //        CreatedAt = timeLog.CreatedAt,
-            //        AppName = timeLog.AppName,
-            //        DeviceId = timeLog.DeviceId,
-            //        StartTime = timeLog.StartTime,
-            //        EndTime = timeLog.EndTime,
-            //        DurationSeconds = timeLog.DurationSeconds
-            //    });
-            //}
+            List<TimeLogResponse> items = new List<TimeLogResponse>();
 
-            return new PaginatedTimeLogsResponse();
+            foreach (var timeLog in timeLogs.Take(finalLimit))
+            {
+                items.Add(new TimeLogResponse
+                {
+                    Id = timeLog.Id,
+                    UserId = timeLog.UserId,
+                    CreatedAt = timeLog.CreatedAt,
+                    AppName = timeLog.AppName,
+                    DeviceId = timeLog.DeviceId,
+                    StartTime = timeLog.StartTime,
+                    EndTime = timeLog.EndTime,
+                    DurationSeconds = timeLog.DurationSeconds
+                });
+            }
+
+            DateTime? nextCursor = items.Any() ? items.Last().StartTime : null;
+           
+            var response = new PaginatedTimeLogsResponse
+            {
+                Items = items,
+                NextCursor = nextCursor,
+                HasMore = hasMore
+            };
+
+            
+            return response;
         }
 
         public TimeLogResponse CreateTimeLog(CreateTimeLogRequest request)

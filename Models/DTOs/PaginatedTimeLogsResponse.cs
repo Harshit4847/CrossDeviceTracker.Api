@@ -7,7 +7,7 @@ namespace CrossDeviceTracker.Api.Models.DTOs
     {
         public List<TimeLogResponse> Items { get; set; } = new List<TimeLogResponse>();
 
-        public string? NextCursor { get; set; }
+        public DateTime? NextCursor { get; set; }
         
         public bool HasMore { get; set; } = false;
     }
