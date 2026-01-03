@@ -41,7 +41,7 @@ namespace CrossDeviceTracker.Api.Services
 
             var timeLogs = _context.TimeLogs.AsNoTracking()
                        .Where(t => t.UserId == userId 
-                            && (cursor == null || t.StartTime < cursor))
+                            && (cursor == null || t.StartTime < cursor ))
                        .OrderByDescending(t => t.StartTime)
                         .Take(finalLimit + 1)
                         .ToList();

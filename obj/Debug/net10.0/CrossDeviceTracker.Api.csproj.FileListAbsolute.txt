@@ -172,7 +172,6 @@ C:\Users\bheem\OneDrive\Desktop\Cross-device-screen-time-tracker-master\CrossDev
 C:\Users\bheem\OneDrive\Desktop\Cross-device-screen-time-tracker-master\CrossDeviceTracker.Api\obj\Debug\net10.0\staticwebassets.development.json
 C:\Users\bheem\OneDrive\Desktop\Cross-device-screen-time-tracker-master\CrossDeviceTracker.Api\obj\Debug\net10.0\staticwebassets.build.endpoints.json
 C:\Users\bheem\OneDrive\Desktop\Cross-device-screen-time-tracker-master\CrossDeviceTracker.Api\obj\Debug\net10.0\swae.build.ex.cache
-C:\Users\bheem\OneDrive\Desktop\Cross-device-screen-time-tracker-master\CrossDeviceTracker.Api\obj\Debug\net10.0\staticwebassets.upToDateCheck.txt
 C:\Users\bheem\OneDrive\Desktop\Cross-device-screen-time-tracker-master\CrossDeviceTracker.Api\obj\Debug\net10.0\CrossDev.94A04B61.Up2Date
 C:\Users\bheem\OneDrive\Desktop\Cross-device-screen-time-tracker-master\CrossDeviceTracker.Api\obj\Debug\net10.0\CrossDeviceTracker.Api.dll
 C:\Users\bheem\OneDrive\Desktop\Cross-device-screen-time-tracker-master\CrossDeviceTracker.Api\obj\Debug\net10.0\refint\CrossDeviceTracker.Api.dll
@@ -182,3 +181,8 @@ C:\Users\bheem\OneDrive\Desktop\Cross-device-screen-time-tracker-master\CrossDev
 C:\Users\bheem\OneDrive\Desktop\Cross-device-screen-time-tracker-master\CrossDeviceTracker.Api\bin\Debug\net10.0\Swashbuckle.AspNetCore.Swagger.dll
 C:\Users\bheem\OneDrive\Desktop\Cross-device-screen-time-tracker-master\CrossDeviceTracker.Api\bin\Debug\net10.0\Swashbuckle.AspNetCore.SwaggerGen.dll
 C:\Users\bheem\OneDrive\Desktop\Cross-device-screen-time-tracker-master\CrossDeviceTracker.Api\bin\Debug\net10.0\Swashbuckle.AspNetCore.SwaggerUI.dll
+C:\Users\bheem\OneDrive\Desktop\Cross-device-screen-time-tracker-master\CrossDeviceTracker.Api\bin\Debug\net10.0\Microsoft.EntityFrameworkCore.InMemory.dll
+C:\Users\bheem\OneDrive\Desktop\Cross-device-screen-time-tracker-master\CrossDeviceTracker.Api\bin\Debug\net10.0\xunit.abstractions.dll
+C:\Users\bheem\OneDrive\Desktop\Cross-device-screen-time-tracker-master\CrossDeviceTracker.Api\bin\Debug\net10.0\xunit.assert.dll
+C:\Users\bheem\OneDrive\Desktop\Cross-device-screen-time-tracker-master\CrossDeviceTracker.Api\bin\Debug\net10.0\xunit.core.dll
+C:\Users\bheem\OneDrive\Desktop\Cross-device-screen-time-tracker-master\CrossDeviceTracker.Api\bin\Debug\net10.0\xunit.execution.dotnet.dll
