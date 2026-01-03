@@ -13,7 +13,11 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("CrossDeviceTracker.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
+<<<<<<< HEAD
 [assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+cfd9878bf6bf8509d1b6d62b79b0344afc38c280")]
+=======
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6235ecd51057361f587e1d69690daf3f98fbcb06")]
+>>>>>>> 5bf30cf8c366719ba6413472d58352ae055d6b89
 [assembly: System.Reflection.AssemblyProductAttribute("CrossDeviceTracker.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("CrossDeviceTracker.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
