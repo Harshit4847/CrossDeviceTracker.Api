@@ -3671,24 +3671,31 @@
     ]
   },
   "packageFolders": {
-    "/home/runner/.nuget/packages/": {}
+    "C:\\Users\\bheem\\.nuget\\packages\\": {},
+    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "/home/runner/work/CrossDeviceTracker.Api/CrossDeviceTracker.Api/CrossDeviceTracker.Api.csproj",
+      "projectUniqueName": "C:\\Users\\bheem\\OneDrive\\Desktop\\Cross-device-screen-time-tracker-master\\CrossDeviceTracker.Api\\CrossDeviceTracker.Api.csproj",
       "projectName": "CrossDeviceTracker.Api",
-      "projectPath": "/home/runner/work/CrossDeviceTracker.Api/CrossDeviceTracker.Api/CrossDeviceTracker.Api.csproj",
-      "packagesPath": "/home/runner/.nuget/packages/",
-      "outputPath": "/home/runner/work/CrossDeviceTracker.Api/CrossDeviceTracker.Api/obj/",
+      "projectPath": "C:\\Users\\bheem\\OneDrive\\Desktop\\Cross-device-screen-time-tracker-master\\CrossDeviceTracker.Api\\CrossDeviceTracker.Api.csproj",
+      "packagesPath": "C:\\Users\\bheem\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\bheem\\OneDrive\\Desktop\\Cross-device-screen-time-tracker-master\\CrossDeviceTracker.Api\\obj\\",
       "projectStyle": "PackageReference",
+      "fallbackFolders": [
+        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+      ],
       "configFilePaths": [
-        "/home/runner/.nuget/NuGet/NuGet.Config"
+        "C:\\Users\\bheem\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
       "originalTargetFrameworks": [
         "net10.0"
       ],
       "sources": {
+        "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
@@ -3763,7 +3770,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/10.0.101/PortableRuntimeIdentifierGraph.json",
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.101/PortableRuntimeIdentifierGraph.json",
         "packagesToPrune": {
           "Microsoft.AspNetCore": "(,10.0.32767]",
           "Microsoft.AspNetCore.Antiforgery": "(,10.0.32767]",

@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CrossDeviceTracker.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260103131422_AddDevicesTable")]
-    partial class AddDevicesTable
+    [Migration("20260104061907_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

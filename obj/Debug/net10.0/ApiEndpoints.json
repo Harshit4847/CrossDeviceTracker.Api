@@ -1,5 +1,37 @@
 [
   {
+    "ContainingType": "CrossDeviceTracker.Api.Controllers.DevicesController",
+    "Method": "CreateDevice",
+    "RelativePath": "api/devices",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "CrossDeviceTracker.Api.Models.DTOs.CreateDeviceRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "CrossDeviceTracker.Api.Controllers.DevicesController",
+    "Method": "GetDevicesForUser",
+    "RelativePath": "api/devices/user/{userId}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "userId",
+        "Type": "System.Guid",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
     "ContainingType": "CrossDeviceTracker.Api.Controllers.TimeLogsController",
     "Method": "CreateTimeLog",
     "RelativePath": "api/timelogs",
