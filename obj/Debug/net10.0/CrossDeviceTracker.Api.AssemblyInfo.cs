@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("CrossDeviceTracker.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5b661efb8b37eba677ff2f86f01fffd3391fc4ee")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+dc2ed48dc26b171716a24de5854a43fe3c54f00d")]
 [assembly: System.Reflection.AssemblyProductAttribute("CrossDeviceTracker.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("CrossDeviceTracker.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

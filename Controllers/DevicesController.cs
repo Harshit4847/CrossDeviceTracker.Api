@@ -52,7 +52,15 @@ namespace CrossDeviceTracker.Api.Controllers
 
 
             var response = _deviceService.CreateDevice(request);
-            return Ok(response);
+
+            if (response.WasCreated == true)
+            {
+                return CreatedAtAction(nameof(GetDevicesForUser), new { userId = request.UserId }, response.Device);
+            }
+            else
+            {
+                return Ok(response.Device);
+            }
         }
 
     }

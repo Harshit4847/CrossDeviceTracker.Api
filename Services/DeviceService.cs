@@ -14,14 +14,20 @@ namespace CrossDeviceTracker.Api.Services
             _context = context;
         }
 
-        public DeviceResponse CreateDevice(CreateDeviceRequest request)
+        public DeviceResult CreateDevice(CreateDeviceRequest request)
         {
 
             var existingDevice = _context.Devices
                 .FirstOrDefault(d =>d.UserId == request.UserId && d.Id == request.DeviceId);
 
+            DeviceResult result = new DeviceResult();
+            var response = new DeviceResponse();
+
             if (existingDevice == null)
             {
+                
+                result.WasCreated = true;
+
                 var entity = new Device
                 {
                     Id = request.DeviceId,
@@ -34,35 +40,26 @@ namespace CrossDeviceTracker.Api.Services
                 _context.Devices.Add(entity);
                 _context.SaveChanges();
 
-                var response = new DeviceResponse
-                {
+                response.Platform = entity.Platform;
+                response.Id = entity.Id;
+                response.UserId = entity.UserId;
+                response.DeviceName = entity.DeviceName;
+                response.CreatedAt = entity.CreatedAt;
 
-                    Id = entity.Id,
-                    UserId = entity.UserId,
-                    DeviceName = entity.DeviceName,
-                    Platform = entity.Platform,
-                    CreatedAt = entity.CreatedAt
-                    
-                };
-
-
-
-                return response;
             }
             else
-            {
+            {   
+                result.WasCreated = false;
 
-                var response = new DeviceResponse
-                {
-                    Id = existingDevice.Id,
-                    UserId = existingDevice.UserId,
-                    DeviceName = existingDevice.DeviceName,
-                    Platform = existingDevice.Platform,
-                    CreatedAt = existingDevice.CreatedAt
-                };
+                response.Platform = existingDevice.Platform;
+                response.Id = existingDevice.Id;
+                response.UserId = existingDevice.UserId;
+                response.DeviceName = existingDevice.DeviceName;
+                response.CreatedAt = existingDevice.CreatedAt;
 
-                return response;
             }
+            result.Device = response;
+            return result;
         }
 
         public List<DeviceResponse> GetDevicesForUser(Guid userId)
@@ -86,7 +83,6 @@ namespace CrossDeviceTracker.Api.Services
 
                 });
             }
-
 
             return responses;
         }

@@ -23,15 +23,16 @@ namespace CrossDeviceTracker.Api.Data
 
                 entity.HasKey(u => u.Id);
 
+                entity.HasIndex(u => u.Email)
+                      .IsUnique();
                 entity.Property(u => u.Email)
-                      .IsRequired()
-                      .HasMaxLength(255);
+                .IsRequired()
+                .HasMaxLength(255);
 
                 entity.Property(u => u.PasswordHash)
                       .IsRequired();
 
                 entity.Property(u => u.CreatedAt);
-                entity.Property(u => u.UpdatedAt);
             });
 
             // time_logs table
