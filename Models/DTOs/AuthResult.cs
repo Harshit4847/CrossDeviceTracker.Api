@@ -11,5 +11,6 @@
         public string? Email { get; set; }
 
         public string? ErrorMessage { get; set; }
+
     }
 }

@@ -4,8 +4,10 @@ using CrossDeviceTracker.Api.Models.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 
 namespace CrossDeviceTracker.Api.Services
@@ -39,6 +41,7 @@ namespace CrossDeviceTracker.Api.Services
 
                 var newUser = new User
                 {
+
                     Email = email,
                     CreatedAt = DateTime.UtcNow,
                     Id = Guid.NewGuid()
@@ -51,6 +54,7 @@ namespace CrossDeviceTracker.Api.Services
                 result.IsSuccess = true;
                 result.UserId = newUser.Id;
                 result.Email = newUser.Email;
+                
 
             }
 
@@ -79,9 +83,62 @@ namespace CrossDeviceTracker.Api.Services
                     result.IsSuccess = true;
                     result.UserId = user.Id;
                     result.Email = user.Email;
+                    result.AccessToken = GenerateJwtToken(user.Id, user.Email);
                 }
             }
             return result;
         }
+
+        private string GenerateJwtToken(Guid userId, string? email)
+        {
+            var key = _configuration["Jwt:Key"];
+            var issuer = _configuration["Jwt:Issuer"];
+            var audience = _configuration["Jwt:Audience"];
+            var expiryMinutes = _configuration["Jwt:ExpiryMinutes"];
+
+            if (key == null || issuer == null || audience == null || expiryMinutes == null)
+            {
+                throw new InvalidOperationException("JWT configuration is missing.");
+            }
+
+            // 2️⃣ Create signing key & credentials
+            var securityKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(key)
+            );
+
+            var credentials = new SigningCredentials(
+                securityKey,
+                SecurityAlgorithms.HmacSha256
+            );
+
+            // 3️⃣ Create claims
+            var claims = new List<Claim>
+    {
+        new Claim(JwtRegisteredClaimNames.Sub, userId.ToString())
+    };
+
+            if (!string.IsNullOrWhiteSpace(email))
+            {
+                claims.Add(new Claim(JwtRegisteredClaimNames.Email, email));
+            }
+
+            if (!double.TryParse(expiryMinutes, out var minutes))
+            {
+                throw new InvalidOperationException("JWT expiry is invalid.");
+            }
+
+            // 4️⃣ Create token
+            var token = new JwtSecurityToken(
+                issuer: issuer,
+                audience: audience,
+                claims: claims,
+                expires: DateTime.UtcNow.AddMinutes(minutes),
+                signingCredentials: credentials
+            );
+
+            // 5️⃣ Serialize token to string
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
     }
 }

@@ -1,4 +1,6 @@
-﻿namespace CrossDeviceTracker.Api.Services
+﻿using System.Security.Claims;
+
+namespace CrossDeviceTracker.Api.Services
 {
     public class CurrentUserService : ICurrentUserService
     {
@@ -15,12 +17,26 @@
             {
                 var context = _contextAccessor.HttpContext;
 
-                if (context == null || context.User.Identity.IsAuthenticated == false)
+                if (context?.User?.Identity?.IsAuthenticated != true)
                 {
                     return null;
                 }
 
-                return null;
+                var sub = context.User.Claims
+                    .FirstOrDefault(c => c.Type == "sub" || c.Type == ClaimTypes.NameIdentifier)
+                    ?.Value;
+
+                if (string.IsNullOrWhiteSpace(sub))
+                {
+                    return null;
+                }
+
+                if (!Guid.TryParse(sub, out var userId))
+                {
+                    return null;
+                }
+
+                return userId;
             }
         }
     }
