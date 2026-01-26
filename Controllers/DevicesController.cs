@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using CrossDeviceTracker.Api.Services;
+using Microsoft.AspNetCore.Authorization;
+
 
 namespace CrossDeviceTracker.Api.Controllers
 {
@@ -15,6 +17,7 @@ namespace CrossDeviceTracker.Api.Controllers
             _deviceService = deviceService;
         }
 
+        [Authorize]
         [HttpGet("user/{userId}")]
         public IActionResult GetDevicesForUser(Guid userId)
         {

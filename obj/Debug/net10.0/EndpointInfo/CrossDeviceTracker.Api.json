@@ -146,6 +146,10 @@
           "platform": {
             "type": "string",
             "nullable": true
+          },
+          "deviceId": {
+            "type": "string",
+            "format": "uuid"
           }
         },
         "additionalProperties": false
