@@ -18,7 +18,7 @@ namespace CrossDeviceTracker.Api.Controllers
         }
 
         [Authorize]
-        [HttpGet("user/{userId}")]
+        [HttpGet]
         public IActionResult GetDevicesForUser(Guid userId)
         {
             if (userId == Guid.Empty)

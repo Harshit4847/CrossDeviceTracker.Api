@@ -9,7 +9,6 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
-
 namespace CrossDeviceTracker.Api.Services
 {
     public class AuthService : IAuthService
@@ -17,8 +16,8 @@ namespace CrossDeviceTracker.Api.Services
         private readonly AppDbContext _context;
         private readonly IConfiguration _configuration;
         private readonly IPasswordHasher<User> _passwordHasher;
-        
-        public AuthService(AppDbContext context, IConfiguration configuration, IPasswordHasher<User> passwordHasher) 
+
+        public AuthService(AppDbContext context, IConfiguration configuration, IPasswordHasher<User> passwordHasher)
         {
             _context = context;
             _configuration = configuration;
@@ -31,17 +30,15 @@ namespace CrossDeviceTracker.Api.Services
 
             AuthResult result = new AuthResult();
 
-            if (isUserExists) {
-
+            if (isUserExists)
+            {
                 result.IsSuccess = false;
                 result.ErrorMessage = "User with this email already exists.";
-
             }
-            else {
-
+            else
+            {
                 var newUser = new User
                 {
-
                     Email = email,
                     CreatedAt = DateTime.UtcNow,
                     Id = Guid.NewGuid()
@@ -52,10 +49,7 @@ namespace CrossDeviceTracker.Api.Services
                 await _context.SaveChangesAsync();
 
                 result.IsSuccess = true;
-                result.UserId = newUser.Id;
                 result.Email = newUser.Email;
-                
-
             }
 
             return result;
@@ -63,29 +57,30 @@ namespace CrossDeviceTracker.Api.Services
 
         public async Task<AuthResult> LoginAsync(string email, string password)
         {
-
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
             AuthResult result = new AuthResult();
 
-            if (user == null) {
+            if (user == null)
+            {
                 result.IsSuccess = false;
                 result.ErrorMessage = "Email or password is invalid.";
             }
-            else {
-
-
+            else
+            {
                 var passwordVerificationResult = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, password);
-                if (passwordVerificationResult == PasswordVerificationResult.Failed) {
+                if (passwordVerificationResult == PasswordVerificationResult.Failed)
+                {
                     result.IsSuccess = false;
                     result.ErrorMessage = "Email or password is invalid.";
                 }
-                else {
+                else
+                {
                     result.IsSuccess = true;
-                    result.UserId = user.Id;
                     result.Email = user.Email;
                     result.AccessToken = GenerateJwtToken(user.Id, user.Email);
                 }
             }
+
             return result;
         }
 
@@ -101,25 +96,20 @@ namespace CrossDeviceTracker.Api.Services
                 throw new InvalidOperationException("JWT configuration is missing.");
             }
 
-            // 2️⃣ Create signing key & credentials
-            var securityKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(key)
-            );
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
+            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
-            var credentials = new SigningCredentials(
-                securityKey,
-                SecurityAlgorithms.HmacSha256
-            );
-
-            // 3️⃣ Create claims
             var claims = new List<Claim>
-    {
-        new Claim(JwtRegisteredClaimNames.Sub, userId.ToString())
-    };
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
+                new Claim(ClaimTypes.NameIdentifier, userId.ToString())
+
+            };
 
             if (!string.IsNullOrWhiteSpace(email))
             {
                 claims.Add(new Claim(JwtRegisteredClaimNames.Email, email));
+
             }
 
             if (!double.TryParse(expiryMinutes, out var minutes))
@@ -127,7 +117,6 @@ namespace CrossDeviceTracker.Api.Services
                 throw new InvalidOperationException("JWT expiry is invalid.");
             }
 
-            // 4️⃣ Create token
             var token = new JwtSecurityToken(
                 issuer: issuer,
                 audience: audience,
@@ -136,9 +125,7 @@ namespace CrossDeviceTracker.Api.Services
                 signingCredentials: credentials
             );
 
-            // 5️⃣ Serialize token to string
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
-
     }
 }

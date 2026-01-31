@@ -22,16 +22,16 @@ namespace CrossDeviceTracker.Api.Services
                     return null;
                 }
 
-                var sub = context.User.Claims
-                    .FirstOrDefault(c => c.Type == "sub" || c.Type == ClaimTypes.NameIdentifier)
+                var userIdClaim = context.User.Claims
+                    .FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)
                     ?.Value;
 
-                if (string.IsNullOrWhiteSpace(sub))
+                if (string.IsNullOrWhiteSpace(userIdClaim))
                 {
                     return null;
                 }
 
-                if (!Guid.TryParse(sub, out var userId))
+                if (!Guid.TryParse(userIdClaim, out var userId))
                 {
                     return null;
                 }
