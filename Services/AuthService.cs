@@ -49,6 +49,7 @@ namespace CrossDeviceTracker.Api.Services
                 await _context.SaveChangesAsync();
 
                 result.IsSuccess = true;
+                result.UserId = newUser.Id;
                 result.Email = newUser.Email;
             }
 

@@ -17,7 +17,7 @@ namespace CrossDeviceTracker.Api.Controllers
         }
 
         [HttpPost]
-        public IActionResult CreateTimeLog([FromBody] CreateTimeLogRequest request)
+        public async Task<IActionResult> CreateTimeLog([FromBody] CreateTimeLogRequest request)
         {
             if(request == null)
             {
@@ -44,14 +44,14 @@ namespace CrossDeviceTracker.Api.Controllers
             {
                 return BadRequest("DurationSeconds must be greater than zero");
             }
-            var response = _timeLogService.CreateTimeLog(request);
+            var response = await _timeLogService.CreateTimeLog(request);
 
 
             return Ok(response);
         }
 
         [HttpGet("user/{userId}")]
-        public IActionResult GetTimeLogsForUser(Guid userId , [FromQuery] int? limit, [FromQuery] DateTime? cursor)
+        public async Task<IActionResult> GetTimeLogsForUser(Guid userId , [FromQuery] int? limit, [FromQuery] DateTime? cursor)
         {
 
             if (userId == Guid.Empty)
@@ -60,7 +60,7 @@ namespace CrossDeviceTracker.Api.Controllers
             }
             
 
-            var response = _timeLogService.GetTimeLogsForUser(userId, limit, cursor);
+            var response = await _timeLogService.GetTimeLogsForUser(userId, limit, cursor);
 
             return Ok(response);
         }
