@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.InMemory;
 using System;
+using System.Threading.Tasks;
 
 namespace CrossDeviceTracker.Api.Tests.Services
 {
@@ -24,13 +25,13 @@ namespace CrossDeviceTracker.Api.Tests.Services
         }
 
         [Fact]
-        public void GetTimeLogsForUser_ShouldReturnEmptyList()
+        public async Task GetTimeLogsForUser_ShouldReturnEmptyList()
         {
             // Arrange
             Guid userId = Guid.NewGuid();
 
             // Act
-            var result = _service.GetTimeLogsForUser(userId, null, null);
+            var result = await _service.GetTimeLogsForUser(userId, null, null);
 
             // Assert
             Assert.NotNull(result);
@@ -38,16 +39,16 @@ namespace CrossDeviceTracker.Api.Tests.Services
         }
 
         [Fact]
-        public void GetTimeLogsForUser_ShouldReturnListOfTimeLogResponse()
+        public async Task GetTimeLogsForUser_ShouldReturnListOfTimeLogResponse()
         {
             // Arrange
             Guid userId = Guid.NewGuid();
 
             // Act
-            var result = _service.GetTimeLogsForUser(userId, null, null);
+            var result = await _service.GetTimeLogsForUser(userId, null, null);
 
             // Assert
-            Assert.IsType<List<TimeLogResponse>>(result.Items);
+            Assert.IsType<PaginatedTimeLogsResponse>(result);
         }
     }
 }
