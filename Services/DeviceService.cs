@@ -14,11 +14,11 @@ namespace CrossDeviceTracker.Api.Services
             _context = context;
         }
 
-        public DeviceResult CreateDevice(CreateDeviceRequest request)
+        public DeviceResult CreateDevice(Guid UserId, CreateDeviceRequest request)
         {
 
             var existingDevice = _context.Devices
-                .FirstOrDefault(d =>d.UserId == request.UserId && d.Id == request.DeviceId);
+                .FirstOrDefault(d =>d.UserId == UserId && d.Id == request.DeviceId);
 
             DeviceResult result = new DeviceResult();
             var response = new DeviceResponse();
@@ -31,7 +31,7 @@ namespace CrossDeviceTracker.Api.Services
                 var entity = new Device
                 {
                     Id = request.DeviceId,
-                    UserId = request.UserId,
+                    UserId = UserId,
                     DeviceName = request.DeviceName,
                     Platform = request.Platform,
                     CreatedAt = DateTime.UtcNow,

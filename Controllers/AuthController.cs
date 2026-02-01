@@ -17,6 +17,37 @@ namespace CrossDeviceTracker.Api.Controllers
             _authService = authService;
         }
 
+        [HttpPost("register")]
+        public async Task<IActionResult> Register([FromBody] RegisterRequest request)
+        {
+            if (request == null)
+            {
+                return BadRequest("Request body is null");
+            }
+
+            if (string.IsNullOrWhiteSpace(request.Email))
+            {
+                return BadRequest("Email is required");
+            }
+
+            if (string.IsNullOrWhiteSpace(request.Password))
+            {
+                return BadRequest("Password is required");
+            }
+
+            var response = await _authService.RegisterAsync(request.Email, request.Password);
+            if (!response.IsSuccess)
+            {
+                return BadRequest(response.ErrorMessage);
+            }
+
+            return CreatedAtAction(nameof(Register), new { }, new
+            {
+                userId = response.UserId,
+                email = response.Email
+            });
+        }
+
         [HttpPost("token")]
         public async Task<IActionResult> Login ([FromBody] LoginRequest request)
         {

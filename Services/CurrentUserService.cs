@@ -1,4 +1,5 @@
 ﻿using System.Security.Claims;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace CrossDeviceTracker.Api.Services
 {
@@ -6,7 +7,7 @@ namespace CrossDeviceTracker.Api.Services
     {
         private readonly IHttpContextAccessor _contextAccessor;
 
-        public CurrentUserService (IHttpContextAccessor contextAccessor)
+        public CurrentUserService(IHttpContextAccessor contextAccessor)
         {
             _contextAccessor = contextAccessor;
         }
@@ -22,9 +23,8 @@ namespace CrossDeviceTracker.Api.Services
                     return null;
                 }
 
-                var userIdClaim = context.User.Claims
-                    .FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)
-                    ?.Value;
+                var userIdClaim = context.User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+                    ?? context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
                 if (string.IsNullOrWhiteSpace(userIdClaim))
                 {

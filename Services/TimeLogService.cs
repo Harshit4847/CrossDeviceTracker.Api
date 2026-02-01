@@ -1,85 +1,55 @@
 ﻿using CrossDeviceTracker.Api.Data;
 using CrossDeviceTracker.Api.Models.DTOs;
 using CrossDeviceTracker.Api.Models.Entities;
-using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
-using System.Linq;
 
 namespace CrossDeviceTracker.Api.Services
 {
     public class TimeLogService : ITimeLogService
     {
         private readonly AppDbContext _context;
+        private const int MaxLimit = 50;
+        private const int DefaultLimit = 20;
 
-        public TimeLogService(AppDbContext context) {
-            
+        public TimeLogService(AppDbContext context)
+        {
             _context = context;
         }
 
-        public PaginatedTimeLogsResponse GetTimeLogsForUser(Guid userId, int? limit, DateTime? cursor)
+        public async Task<PaginatedTimeLogsResponse> GetTimeLogsForUser(Guid userId, int? limit, DateTime? cursor)
         {
-            //limit logic
+            int finalLimit = GetFinalLimit(limit);
 
-            int maxLimit = 50;
-            int defaultLimit = 20;
-
-            int finalLimit;
-
-            if (!limit.HasValue)
-            {
-                finalLimit = defaultLimit;
-            }
-            else if (limit.Value > maxLimit)
-            {
-                finalLimit = maxLimit;
-            }
-            else
-            {
-                finalLimit = limit.Value;
-            }
-
-
-            var timeLogs = _context.TimeLogs.AsNoTracking()
-                       .Where(t => t.UserId == userId 
-                            && (cursor == null || t.StartTime < cursor ))
-                       .OrderByDescending(t => t.StartTime)
-                        .Take(finalLimit + 1)
-                        .ToList();
+            var timeLogs = await _context.TimeLogs.AsNoTracking()
+                .Where(t => t.UserId == userId && (cursor == null || t.StartTime < cursor))
+                .OrderByDescending(t => t.StartTime)
+                .Take(finalLimit + 1)
+                .ToListAsync();
 
             bool hasMore = timeLogs.Count > finalLimit;
-
-            List<TimeLogResponse> items = new List<TimeLogResponse>();
-
-            foreach (var timeLog in timeLogs.Take(finalLimit))
-            {
-                items.Add(new TimeLogResponse
-                {
-                    Id = timeLog.Id,
-                    UserId = timeLog.UserId,
-                    CreatedAt = timeLog.CreatedAt,
-                    AppName = timeLog.AppName,
-                    DeviceId = timeLog.DeviceId,
-                    StartTime = timeLog.StartTime,
-                    EndTime = timeLog.EndTime,
-                    DurationSeconds = timeLog.DurationSeconds
-                });
-            }
-
+            var items = timeLogs.Take(finalLimit).Select(MapToTimeLogResponse).ToList();
             DateTime? nextCursor = items.Any() ? items.Last().StartTime : null;
-           
-            var response = new PaginatedTimeLogsResponse
+
+            return new PaginatedTimeLogsResponse
             {
                 Items = items,
                 NextCursor = nextCursor,
                 HasMore = hasMore
             };
-
-            
-            return response;
         }
 
-        public TimeLogResponse CreateTimeLog(CreateTimeLogRequest request)
+        public async Task<TimeLogResponse> CreateTimeLog(CreateTimeLogRequest request)
         {
+            if (request == null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
+
+            if (request.DurationSeconds <= 0)
+            {
+                throw new ArgumentException("DurationSeconds must be greater than 0", nameof(request.DurationSeconds));
+            }
+
             var timeLog = new TimeLog
             {
                 Id = Guid.NewGuid(),
@@ -93,22 +63,32 @@ namespace CrossDeviceTracker.Api.Services
             };
 
             _context.TimeLogs.Add(timeLog);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
 
-            var response = new TimeLogResponse
+            return MapToTimeLogResponse(timeLog);
+        }
+
+        private int GetFinalLimit(int? limit)
+        {
+            if (!limit.HasValue)
+                return DefaultLimit;
+
+            return limit.Value > MaxLimit ? MaxLimit : limit.Value;
+        }
+
+        private TimeLogResponse MapToTimeLogResponse(TimeLog timeLog)
+        {
+            return new TimeLogResponse
             {
                 Id = timeLog.Id,
                 UserId = timeLog.UserId,
-                DeviceId = timeLog.DeviceId,
+                CreatedAt = timeLog.CreatedAt,
                 AppName = timeLog.AppName,
+                DeviceId = timeLog.DeviceId,
                 StartTime = timeLog.StartTime,
                 EndTime = timeLog.EndTime,
-                DurationSeconds = timeLog.DurationSeconds,
-                CreatedAt = timeLog.CreatedAt,
+                DurationSeconds = timeLog.DurationSeconds
             };
-
-            
-            return response;
         }
     }
 }

@@ -4,8 +4,7 @@ namespace CrossDeviceTracker.Api.Services
 {
     public interface IDeviceService
     {
-        public DeviceResult CreateDevice(CreateDeviceRequest request);
+        public DeviceResult CreateDevice(Guid UserId, CreateDeviceRequest request);
         public List<DeviceResponse> GetDevicesForUser( Guid userId );
-
     }
 }
