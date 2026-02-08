@@ -4,8 +4,6 @@ namespace CrossDeviceTracker.Api.Models.DTOs
 {
     public class CreateTimeLogRequest
     {
-        public Guid UserId { get; set; }
-
         public Guid DeviceId { get; set; }
 
         public string AppName { get; set; } = string.Empty;

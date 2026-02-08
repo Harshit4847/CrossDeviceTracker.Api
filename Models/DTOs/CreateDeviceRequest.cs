@@ -6,6 +6,5 @@
 
         public string Platform {  get; set; } = string.Empty;
 
-        public Guid DeviceId { get; set; }
     }
 }

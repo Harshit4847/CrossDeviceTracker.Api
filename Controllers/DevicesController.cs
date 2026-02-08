@@ -57,19 +57,13 @@ namespace CrossDeviceTracker.Api.Controllers
                 return BadRequest("Platform is required");
             }
 
-            if (request.DeviceId == Guid.Empty)
-            {
-                return BadRequest("DeviceId is required");
-            }
-
             var response = _deviceService.CreateDevice(userId.Value, request);
 
-            if (response.WasCreated)
-            {
-                return CreatedAtAction(nameof(GetDevicesForUser), new { userId }, response.Device);
-            }
+            
+            return CreatedAtAction(nameof(GetDevicesForUser), new { userId }, response.Device);
+            
 
-            return Ok(response.Device);
+            
         }
     }
 }

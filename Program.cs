@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.AspNetCore.Identity;
+using CrossDeviceTracker.Api.Exceptions;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -59,6 +60,9 @@ app.UseSwagger();
 app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
+
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+
 
 // 🔐 Auth pipeline
 app.UseAuthentication();   // 1️⃣ identify user

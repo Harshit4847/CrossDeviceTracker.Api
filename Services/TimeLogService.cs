@@ -1,7 +1,9 @@
-﻿using CrossDeviceTracker.Api.Data;
+﻿using System;
+using CrossDeviceTracker.Api.Data;
 using CrossDeviceTracker.Api.Models.DTOs;
 using CrossDeviceTracker.Api.Models.Entities;
 using Microsoft.EntityFrameworkCore;
+using CrossDeviceTracker.Api.Exceptions;
 
 namespace CrossDeviceTracker.Api.Services
 {
@@ -10,6 +12,7 @@ namespace CrossDeviceTracker.Api.Services
         private readonly AppDbContext _context;
         private const int MaxLimit = 50;
         private const int DefaultLimit = 20;
+        
 
         public TimeLogService(AppDbContext context)
         {
@@ -38,7 +41,7 @@ namespace CrossDeviceTracker.Api.Services
             };
         }
 
-        public async Task<TimeLogResponse> CreateTimeLog(CreateTimeLogRequest request)
+        public async Task<TimeLogResponse> CreateTimeLog(Guid userid, CreateTimeLogRequest request)
         {
             if (request == null)
             {
@@ -50,10 +53,17 @@ namespace CrossDeviceTracker.Api.Services
                 throw new ArgumentException("DurationSeconds must be greater than 0", nameof(request.DurationSeconds));
             }
 
+            var deviceExists = await _context.Devices.AnyAsync(d => d.Id == request.DeviceId && d.UserId == userid);
+
+            if (!deviceExists)
+            {
+                throw new ForbiddenException("Device not found for the user", nameof(request.DeviceId));
+            }
+
             var timeLog = new TimeLog
             {
                 Id = Guid.NewGuid(),
-                UserId = request.UserId,
+                UserId = userid,
                 DeviceId = request.DeviceId,
                 AppName = request.AppName,
                 StartTime = request.StartTime,

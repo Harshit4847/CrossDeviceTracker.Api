@@ -1,29 +1,35 @@
 using CrossDeviceTracker.Api.Models.DTOs;
 using CrossDeviceTracker.Api.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 
 namespace CrossDeviceTracker.Api.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/timelogs")]
 
     public class TimeLogsController : ControllerBase
     {
         private readonly ITimeLogService _timeLogService;
-        public TimeLogsController(ITimeLogService timeLogService)
+        private readonly ICurrentUserService _currentUserService;
+
+        public TimeLogsController(ITimeLogService timeLogService, ICurrentUserService currentUserService)
         {
             _timeLogService = timeLogService;
+            _currentUserService = currentUserService;
         }
 
         [HttpPost]
         public async Task<IActionResult> CreateTimeLog([FromBody] CreateTimeLogRequest request)
         {
-            if(request == null)
+            var userId = _currentUserService.UserId;
+            if (request == null)
             {
                 return BadRequest("Request body is null");
             }
-            if (request.UserId == Guid.Empty)
+            if (!userId.HasValue || userId.Value == Guid.Empty)
             {
                 return BadRequest("UserId is empty / invalid");
             }
@@ -44,23 +50,24 @@ namespace CrossDeviceTracker.Api.Controllers
             {
                 return BadRequest("DurationSeconds must be greater than zero");
             }
-            var response = await _timeLogService.CreateTimeLog(request);
+            var response = await _timeLogService.CreateTimeLog(userId.Value, request);
 
 
             return Ok(response);
         }
 
-        [HttpGet("user/{userId}")]
-        public async Task<IActionResult> GetTimeLogsForUser(Guid userId , [FromQuery] int? limit, [FromQuery] DateTime? cursor)
+        [Authorize]
+        [HttpGet]
+        public async Task<IActionResult> GetTimeLogsForUser([FromQuery] int? limit, [FromQuery] DateTime? cursor)
         {
-
-            if (userId == Guid.Empty)
+            var userId = _currentUserService.UserId;
+            if (!userId.HasValue || userId.Value == Guid.Empty)
             {
                 return BadRequest("UserId is empty / invalid");
             }
             
 
-            var response = await _timeLogService.GetTimeLogsForUser(userId, limit, cursor);
+            var response = await _timeLogService.GetTimeLogsForUser(userId.Value, limit, cursor);
 
             return Ok(response);
         }
