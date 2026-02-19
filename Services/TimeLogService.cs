@@ -53,11 +53,11 @@ namespace CrossDeviceTracker.Api.Services
                 throw new ArgumentException("DurationSeconds must be greater than 0", nameof(request.DurationSeconds));
             }
 
-            var deviceExists = await _context.Devices.AnyAsync(d => d.Id == request.DeviceId && d.UserId == userid);
+            var deviceExists = await _context.Devices.AnyAsync(d => d.UserId == userid && d.Id == request.DeviceId );
 
             if (!deviceExists)
             {
-                throw new ForbiddenException("Device not found for the user", nameof(request.DeviceId));
+                throw new ForbiddenException("Device not found for the user");
             }
 
             var timeLog = new TimeLog
