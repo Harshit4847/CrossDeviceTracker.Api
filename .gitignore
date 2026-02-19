@@ -398,3 +398,17 @@ FodyWeavers.xsd
 # JetBrains Rider
 *.sln.iml
 .idea/
+
+# Sensitive configuration files
+# Exclude environment-specific settings but keep the base template
+appsettings.Development.json
+appsettings.Production.json
+appsettings.*.json
+!appsettings.json
+
+# User secrets
+secrets.json
+
+# Environment variables
+.env
+.env.local
