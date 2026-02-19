@@ -400,6 +400,7 @@ FodyWeavers.xsd
 .idea/
 
 # Sensitive configuration files
+# Exclude environment-specific settings but keep the base template
 appsettings.Development.json
 appsettings.Production.json
 appsettings.*.json

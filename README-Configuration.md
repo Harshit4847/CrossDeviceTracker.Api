@@ -5,7 +5,7 @@
 1. Copy `appsettings.Development.json.template` to `appsettings.Development.json`
 2. Update the following values in `appsettings.Development.json`:
    - `ConnectionStrings:DefaultConnection`: Your local PostgreSQL connection string
-   - `Jwt:Key`: A secure secret key (minimum 32 characters)
+   - `Jwt:Key`: A secure secret key (minimum 32 characters for HMAC-SHA256)
    - `Jwt:Issuer`: Your API issuer name
    - `Jwt:Audience`: Your client audience name
 
