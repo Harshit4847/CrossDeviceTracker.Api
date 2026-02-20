@@ -33,6 +33,9 @@ namespace CrossDeviceTracker.Api.Exceptions
             }
             catch (Exception ex)
             {
+                Console.WriteLine("🔥 UNHANDLED EXCEPTION:");
+                Console.WriteLine(ex.ToString());
+
                 context.Response.StatusCode = StatusCodes.Status500InternalServerError;
                 context.Response.ContentType = "application/json";
 
