@@ -303,6 +303,8 @@ And:
 
 ### 11.3 Entity Structure
 
+The entity is **sealed** to prevent inheritance misuse.
+
 Fields:
 
 * `Id` → Guid
@@ -315,37 +317,60 @@ Fields:
 
 #### Constructor Rules
 
+Private parameterless constructor is required for EF Core materialization.
+
 Public constructor requires:
 
 * `userId`
 * `tokenHash`
 * `expiresAt`
 
+The public constructor enforces strict invariants:
+
+* `UserId` cannot be empty (`Guid.Empty`).
+* `TokenHash` cannot be null.
+* `TokenHash` must be exactly 32 bytes (SHA256).
+
 Inside constructor:
 
-* Generate `Id`
-* Set `CreatedAt = DateTimeOffset.UtcNow`
+* `Id` is generated inside the entity to guarantee identity at creation.
+* `CreatedAt` is set using `DateTimeOffset.UtcNow` — domain owns time, not DB.
 * Set `IsUsed = false`
 * Assign `TokenHash`
 * Assign `UserId`
 * Assign `ExpiresAt`
 
-Private parameterless constructor is required for EF Core.
+**Note:** Expiration (`ExpiresAt`) is not a construction invariant — it is validated during token consumption, not in the constructor. The constructor accepts and stores the value; the service layer decides the expiry duration.
 
 #### State Transition
 
 `IsUsed`:
 
-* Uses private setter
-* Is changed only through `MarkAsUsed()`
+* Has a private setter.
+* Is changed only through `MarkAsUsed()`.
 
-`MarkAsUsed()` should throw if token is already used.
+`MarkAsUsed()` throws `InvalidOperationException` if token is already used.
 
 State machine:
 
 * `Unused` → `Used` (irreversible)
 
-### 11.4 Database Constraints
+This enforces controlled, irreversible state transitions within the entity.
+
+### 11.4 Architectural Clarifications: Invariants vs Policies
+
+* **Invariants** live inside the entity (e.g., UserId not empty, TokenHash exactly 32 bytes, single-use enforcement via `MarkAsUsed()`).
+* **Policies** (expiry duration, cleanup rules) live in the service/configuration layer — not in the entity.
+* **Database constraints** are required for concurrency safety — service-level checks alone are not sufficient.
+
+This ensures:
+
+* Controlled state transitions
+* No invalid token objects in memory
+* Secure, single-use linking behavior
+* Clean separation of domain logic vs policy configuration
+
+### 11.5 Database Constraints
 
 #### Unique Partial Index
 
@@ -363,7 +388,7 @@ Guarantees:
 * Raw token NEVER stored
 * Hash is unique
 
-### 11.5 Token Generation Flow
+### 11.6 Token Generation Flow
 
 Inside a transaction:
 
@@ -386,21 +411,21 @@ Raw token handling:
 * Never logged
 * Never recoverable
 
-### 11.6 Expiry Policy
+### 11.7 Expiry Policy
 
 * Expiry duration is stored in configuration (IConfiguration / Options).
 * Not hardcoded.
 * Not stored per user.
 * Only `ExpiresAt` timestamp stored in DB.
 
-### 11.7 Token Format
+### 11.8 Token Format
 
 * Generated using cryptographic RNG (32 bytes minimum).
 * Returned as URL-safe Base64.
 * Padding removed.
 * Safe for copy-paste and transport.
 
-### 11.8 Token Validation (Linking Flow)
+### 11.9 Token Validation (Linking Flow)
 
 When desktop sends token:
 
@@ -420,7 +445,7 @@ Inside a transaction:
 8. Commit transaction.
 9. Issue Device JWT.
 
-### 11.9 Security Rules
+### 11.10 Security Rules
 
 * Raw token is never stored.
 * Hash only stored.
@@ -438,7 +463,7 @@ Do not reveal:
 
 All are treated the same.
 
-### 11.10 Concurrency Protection
+### 11.11 Concurrency Protection
 
 #### During Generation
 
@@ -452,7 +477,7 @@ All are treated the same.
 * Device creation inside same transaction.
 * Prevents double linking.
 
-### 11.11 HTTP Status Rules
+### 11.12 HTTP Status Rules
 
 #### Generate Token
 
@@ -464,7 +489,7 @@ All are treated the same.
 * Success → `200 OK`
 * Invalid / expired / used → `401 Unauthorized`
 
-### 11.12 Architectural Principles Applied
+### 11.13 Architectural Principles Applied
 
 * Defense in depth
 * DB as source of truth
