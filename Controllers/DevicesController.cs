@@ -65,5 +65,17 @@ namespace CrossDeviceTracker.Api.Controllers
 
             
         }
+
+        [Authorize]
+        [HttpPost("link-token")]
+        public async Task<IActionResult> GenerateDesktopLinkToken()
+        {
+            var userId = _currentUserService.UserId;
+            if (userId == null || userId == Guid.Empty)
+                return Unauthorized("UserId is invalid");
+
+            var response = await _deviceService.GenerateDesktopLinkTokenAsync(userId.Value);
+            return Ok(response);
+        }
     }
 }

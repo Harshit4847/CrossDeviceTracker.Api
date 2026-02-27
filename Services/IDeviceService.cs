@@ -4,7 +4,9 @@ namespace CrossDeviceTracker.Api.Services
 {
     public interface IDeviceService
     {
-        public DeviceResult CreateDevice(Guid UserId, CreateDeviceRequest request);
-        public List<DeviceResponse> GetDevicesForUser( Guid userId );
+        DeviceResult CreateDevice(Guid UserId, CreateDeviceRequest request);
+        List<DeviceResponse> GetDevicesForUser(Guid userId);
+
+        Task<GenerateDesktopLinkTokenResponse> GenerateDesktopLinkTokenAsync(Guid userId);
     }
 }
