@@ -25,6 +25,15 @@ builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddAuthorization();
 
 builder.Services.AddScoped<IAuthService, AuthService>();
+
+//db
+var env = builder.Environment.EnvironmentName;
+Console.WriteLine($"ENVIRONMENT: {env}");
+
+var conn = builder.Configuration.GetConnectionString("DefaultConnection");
+Console.WriteLine($"CONNECTION STRING IS NULL: {conn == null}");
+Console.WriteLine($"CONNECTION STRING LENGTH: {conn?.Length}");
+Console.WriteLine($"CONNECTION STRING VALUE: {conn}");
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
 );
