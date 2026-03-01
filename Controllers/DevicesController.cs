@@ -1,4 +1,4 @@
-﻿    using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using CrossDeviceTracker.Api.Services;
 using CrossDeviceTracker.Api.Models.DTOs;
 using Microsoft.AspNetCore.Authorization;
