@@ -1,6 +1,8 @@
 ﻿using CrossDeviceTracker.Api.Data;
+using CrossDeviceTracker.Api.Models.Commands;
 using CrossDeviceTracker.Api.Models.DTOs;
 using CrossDeviceTracker.Api.Models.Entities;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using System.Security.Cryptography;
@@ -109,6 +111,11 @@ namespace CrossDeviceTracker.Api.Services
                 Token = token,
                 ExpiresAt = expiresAt
             };
+        }
+
+        Task<LinkDesktopRequest> LinkDesktopAsync(LinkDesktopCommand command)
+        {
+            return;
         }
     }
 }

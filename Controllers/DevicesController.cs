@@ -2,6 +2,7 @@
 using CrossDeviceTracker.Api.Services;
 using CrossDeviceTracker.Api.Models.DTOs;
 using Microsoft.AspNetCore.Authorization;
+using CrossDeviceTracker.Api.Models.Commands;
 
 namespace CrossDeviceTracker.Api.Controllers
 {
@@ -76,6 +77,19 @@ namespace CrossDeviceTracker.Api.Controllers
 
             var response = await _deviceService.GenerateDesktopLinkTokenAsync(userId.Value);
             return Ok(response);
+        }
+
+        [Authorize]
+        [HttpPost("link")]
+        public async Task<IActionResult> LinkDesktopRequest() 
+        {
+            var userId = _currentUserService.UserId;
+            if (userId == null || userId == Guid.Empty)
+                return Unauthorized("UserId is invalid");
+
+            var command = new LinkDesktopCommand();
+
+            var response = await _deviceService.LinkDesktopAsync()
         }
     }
 }
