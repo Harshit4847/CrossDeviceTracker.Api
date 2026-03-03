@@ -1,10 +1,18 @@
-﻿namespace CrossDeviceTracker.Api.Models.DTOs
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace CrossDeviceTracker.Api.Models.DTOs
 {
     public class CreateDeviceRequest
     {
-        public string DeviceName { get; set; } = string.Empty;
+        [Required]
+        [MinLength(1)]
+        [MaxLength(100)]
+        public string DeviceName { get; set; } 
 
-        public string Platform {  get; set; } = string.Empty;
+        [Required]
+        [MinLength(1)]
+        [MaxLength(30)]
+        public string Platform {  get; set; }
 
     }
 }

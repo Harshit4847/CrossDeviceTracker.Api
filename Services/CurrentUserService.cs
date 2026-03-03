@@ -1,5 +1,6 @@
 ﻿using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;
+using CrossDeviceTracker.Api.Exceptions;
 
 namespace CrossDeviceTracker.Api.Services
 {
@@ -12,7 +13,7 @@ namespace CrossDeviceTracker.Api.Services
             _contextAccessor = contextAccessor;
         }
 
-        public Guid? UserId
+        public Guid UserId
         {
             get
             {
@@ -20,7 +21,7 @@ namespace CrossDeviceTracker.Api.Services
 
                 if (context?.User?.Identity?.IsAuthenticated != true)
                 {
-                    return null;
+                    throw new UnauthorizedException("User is not authenticated.");
                 }
 
                 var userIdClaim = context.User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
@@ -28,12 +29,12 @@ namespace CrossDeviceTracker.Api.Services
 
                 if (string.IsNullOrWhiteSpace(userIdClaim))
                 {
-                    return null;
+                    throw new UnauthorizedException("UserId claim is missing.");
                 }
 
                 if (!Guid.TryParse(userIdClaim, out var userId))
                 {
-                    return null;
+                    throw new UnauthorizedException("Invalid UserId claim.");
                 }
 
                 return userId;
