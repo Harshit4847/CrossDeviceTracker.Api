@@ -115,6 +115,7 @@ namespace CrossDeviceTracker.Api.Services
 
         Task<LinkDesktopRequest> LinkDesktopAsync(LinkDesktopCommand command)
         {
+
             return;
         }
     }

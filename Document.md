@@ -1223,4 +1223,56 @@ A chronological record of key design decisions and their rationale.
 
 ---
 
+### Update: Device Authentication & Android Device Registration Design
+
+During recent design discussions, the device authentication strategy for different client platforms was clarified and refined.
+
+#### Desktop Authentication
+
+Desktop applications will authenticate using the **link-token flow**.
+A user generates a one-time linking token from the website, which is then entered into the desktop client. The backend validates the token, creates a new device entry, and issues a **Device JWT** to the desktop client. This token will be used for all future communication with the API.
+
+#### Android Authentication Strategy
+
+Unlike desktop clients, Android applications can present a login screen. Therefore, Android devices will follow a **two-step authentication flow**:
+
+1. The user logs in using email and password (`/api/auth/token`) and receives a **User JWT**.
+2. The Android app registers the device with the backend using `/api/devices`, sending a generated **InstallationId** along with device metadata.
+
+If a device with the same `(UserId, InstallationId)` already exists, the backend will reuse the existing device record instead of creating a duplicate. Otherwise, a new device record will be created.
+
+#### InstallationId Design
+
+An `InstallationId` will be introduced for mobile devices to uniquely identify a specific app installation.
+A **unique constraint `(UserId, InstallationId)`** will be enforced at the database level to prevent duplicate device registrations for the same user installation.
+
+Note: If the user uninstalls and reinstalls the mobile application, the local InstallationId will be lost and a new device will be registered. This behavior is acceptable and mirrors common industry practices.
+
+#### Device JWT Design
+
+Device-specific JWTs will include claims such as:
+
+* `device_id`
+* `user_id`
+* `token_version`
+
+These tokens allow the backend to identify the calling device without relying on request body parameters. For example, endpoints such as `/api/timelogs` will extract the `DeviceId` directly from the Device JWT rather than trusting client-supplied identifiers.
+
+#### API Response Design
+
+The `LinkDesktopResponse` DTO currently returns a `DeviceJwt`.
+Returning `DeviceId` alongside the token is being considered to simplify client-side implementation, although the DeviceId is already embedded within the JWT payload.
+
+#### Device Entity Future Enhancements
+
+Planned fields for the `Device` entity include:
+
+* `TokenVersion` – enables device token revocation.
+* `IsRevoked` – allows disabling compromised devices.
+* `LastDataSyncAt` – records the last successful device synchronization.
+
+These fields will support device revocation, security hardening, and improved synchronization tracking in future development phases.
+
+---
+
 *This document is a living reference. Update it as new features are implemented, decisions are made, or the architecture evolves.*

@@ -503,3 +503,79 @@ All are treated the same.
 * Explicit state transitions
 * Separation of policy (configuration) from data (DB)
 * Clean REST semantics
+
+### Design Update: Device Authentication Strategy and Mobile Device Identification
+
+During recent design discussions, the authentication approach for different client types (Website, Desktop, and Android) was clarified to ensure a clean and secure architecture.
+
+#### Client Roles and Authentication Model
+
+The system now distinguishes between **user authentication** and **device authentication**:
+
+* **Website**: Uses **User JWT** for user-level actions such as analytics, device management, and generating desktop link tokens.
+* **Desktop Client**: Uses a **Device JWT** obtained through the one-time **desktop link-token flow**.
+* **Android Client**: Uses a **hybrid model** — User JWT for user actions and Device JWT for device-originated data such as screen time logs.
+
+This separation ensures that device-originated data can be securely associated with a specific device without relying on client-provided identifiers.
+
+#### Desktop Linking Flow
+
+Desktop devices are linked using a **one-time link token generated from the website**.
+The flow is:
+
+1. User generates a desktop linking token from the website.
+2. The token is entered into the desktop application.
+3. Backend validates the token and ensures it is unused and not expired.
+4. The token is marked as used.
+5. A new device record is created.
+6. The backend issues a **Device JWT** to the desktop application.
+
+The desktop client will store this token and use it for all future API calls.
+
+#### Android Device Registration Strategy
+
+Android applications are capable of presenting a login UI, so they follow a different flow:
+
+1. User logs in via `/api/auth/token` and receives a **User JWT**.
+2. The mobile app registers the device via `/api/devices`, sending:
+
+   * `DeviceName`
+   * `Platform`
+   * `InstallationId`
+
+#### InstallationId Design
+
+To prevent duplicate device registrations caused by login/logout cycles, Android devices generate a persistent **InstallationId** on first launch.
+
+The backend enforces a **database-level unique constraint**:
+
+`UNIQUE(UserId, InstallationId)`
+
+When registering a device:
+
+* If a device with the same `(UserId, InstallationId)` exists → reuse the existing device.
+* If not → create a new device entry.
+
+If the mobile app is uninstalled and reinstalled, the InstallationId will be lost and a new device will be registered. This behavior is acceptable and mirrors common practices in mobile systems.
+
+#### Device JWT Design
+
+Device JWTs will include claims such as:
+
+* `device_id`
+* `user_id`
+* `token_version`
+
+These claims allow the backend to determine the calling device directly from the JWT rather than trusting client-supplied identifiers.
+
+Future device-originated endpoints (e.g., time log submission) will extract the `DeviceId` from the Device JWT instead of accepting it from the request body.
+
+#### Device Security Fields (Planned)
+
+To support device security and token revocation, the following fields are planned for the `Device` entity:
+
+* `TokenVersion` – allows invalidating previously issued device tokens.
+* `IsRevoked` – marks devices as disabled.
+* `LastDataSyncAt` – records the last successful synchronization from the device.
+
+These additions will allow administrators or users to revoke compromised devices and improve overall device management.
