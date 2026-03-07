@@ -1275,4 +1275,172 @@ These fields will support device revocation, security hardening, and improved sy
 
 ---
 
+## Design Update — Desktop Linking Flow Implementation
+
+Today the backend implementation of the **desktop linking flow** was largely completed. The goal of this feature is to securely connect a desktop application to a user account using a **one-time linking token**.
+
+### 1. Link Token Decoding Process
+
+The desktop client sends the linking token as a **Base64URL string**. The backend performs the following steps to safely decode and validate it:
+
+1. Convert Base64URL → Base64
+
+   * Replace `-` with `+`
+   * Replace `_` with `/`
+
+2. Restore Base64 padding
+
+   * If `length % 4 == 2` → append `==`
+   * If `length % 4 == 3` → append `=`
+   * If `length % 4 == 1` → treat token as invalid
+
+3. Decode Base64 → `byte[]`
+
+4. Validate decoded token length
+
+   * Expected length: **32 bytes**
+
+If any step fails, the API throws:
+
+```
+UnauthorizedException("Invalid linking token")
+```
+
+All invalid tokens return the same response to avoid leaking information.
+
+---
+
+### 2. Token Hash Validation
+
+After decoding:
+
+1. Compute SHA256 hash of the decoded bytes.
+2. Query the database using the hash:
+
+```
+DesktopLinkTokens
+WHERE TokenHash == hashBytes
+```
+
+Validation rules:
+
+* Token must exist
+* Token must not be used
+* Token must not be expired
+
+If any validation fails → return `401 Unauthorized`.
+
+---
+
+### 3. Device Creation After Successful Token Validation
+
+Once the token is validated:
+
+1. Mark the token as used:
+
+```
+tokendb.MarkAsUsed()
+```
+
+2. Create a new device record:
+
+```
+Device
+{
+    Id = Guid.NewGuid(),
+    UserId = tokendb.UserId,
+    DeviceName = command.DeviceName,
+    Platform = command.Platform,
+    CreatedAt = DateTime.UtcNow
+}
+```
+
+3. Save changes to the database.
+
+Important rule:
+`UserId` comes from the **token record**, not from the client request.
+
+---
+
+### 4. Device JWT Generation
+
+After creating the device, the backend generates a **Device JWT** which the desktop client will use for authentication.
+
+JWT claims currently include:
+
+```
+device_id
+user_id
+```
+
+Signing process:
+
+1. Read secret key from configuration:
+
+```
+Jwt:Key
+```
+
+2. Convert key → UTF8 bytes.
+
+3. Create `SymmetricSecurityKey`.
+
+4. Create `SigningCredentials` using:
+
+```
+HmacSha256
+```
+
+5. Create `JwtSecurityToken` containing:
+
+   * issuer
+   * audience
+   * claims
+   * expiration
+   * signing credentials
+
+6. Convert token to string using `JwtSecurityTokenHandler`.
+
+The generated token is returned to the client as:
+
+```
+LinkDesktopResponse.DeviceJwt
+```
+
+---
+
+### 5. Security Rules Enforced
+
+Key security decisions implemented:
+
+* Raw linking tokens are **never stored**, only SHA256 hashes.
+* Invalid tokens always return the same response (`401 Unauthorized`).
+* Token validation includes:
+
+  * existence
+  * expiration
+  * single-use enforcement.
+* Device identity will later be extracted from **JWT claims**, not request bodies.
+
+---
+
+### 6. Current Implementation Status
+
+Completed:
+
+* Link token decoding and validation
+* SHA256 token hash verification
+* DesktopLinkToken database lookup
+* Token single-use enforcement
+* Device creation during linking
+* Device JWT generation
+
+Remaining future improvements:
+
+* Device `TokenVersion` support
+* Device revocation system
+* Moving JWT generation into a dedicated service
+
+---
+
 *This document is a living reference. Update it as new features are implemented, decisions are made, or the architecture evolves.*

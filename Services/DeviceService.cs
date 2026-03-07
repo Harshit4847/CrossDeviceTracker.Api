@@ -1,11 +1,18 @@
 ﻿using CrossDeviceTracker.Api.Data;
+using CrossDeviceTracker.Api.Exceptions;
 using CrossDeviceTracker.Api.Models.Commands;
 using CrossDeviceTracker.Api.Models.DTOs;
 using CrossDeviceTracker.Api.Models.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Security.Cryptography;
+using System.Text;
+using CrossDeviceTracker.Api;
+
 
 namespace CrossDeviceTracker.Api.Services
 {
@@ -26,23 +33,23 @@ namespace CrossDeviceTracker.Api.Services
             DeviceResult result = new DeviceResult();
             var response = new DeviceResponse();
 
-                var entity = new Device
-                {
-                    Id = Guid.NewGuid(),
-                    UserId = UserId,
-                    DeviceName = request.DeviceName,
-                    Platform = request.Platform,
-                    CreatedAt = DateTime.UtcNow,
-                };
+            var entity = new Device
+            {
+                Id = Guid.NewGuid(),
+                UserId = UserId,
+                DeviceName = request.DeviceName,
+                Platform = request.Platform,
+                CreatedAt = DateTime.UtcNow,
+            };
 
-                _context.Devices.Add(entity);
-                _context.SaveChanges();
+            _context.Devices.Add(entity);
+            _context.SaveChanges();
 
-                response.Platform = entity.Platform;
-                response.Id = entity.Id;
-                response.UserId = entity.UserId;
-                response.DeviceName = entity.DeviceName;
-                response.CreatedAt = entity.CreatedAt;
+            response.Platform = entity.Platform;
+            response.Id = entity.Id;
+            response.UserId = entity.UserId;
+            response.DeviceName = entity.DeviceName;
+            response.CreatedAt = entity.CreatedAt;
 
             result.Device = response;
             return result;
@@ -113,10 +120,113 @@ namespace CrossDeviceTracker.Api.Services
             };
         }
 
-        Task<LinkDesktopRequest> LinkDesktopAsync(LinkDesktopCommand command)
+        async Task<LinkDesktopResponse> LinkDesktopAsync(LinkDesktopCommand command)
         {
+            var token = command.LinkToken;
+            //restroring peding
 
-            return;
+            token = token.Replace('-', '+').Replace('_', '/');
+            int remainder = token.Length % 4;
+
+            if (remainder == 2)
+            {
+                token += "==";
+            }
+            else if (remainder == 3)
+            {
+                token += "=";
+            }
+            else if (remainder == 1)
+            {
+                throw new UnauthorizedException("Invalid linking token");
+            }
+
+            byte[] decodedBytes;
+
+            try
+            {
+                decodedBytes = Convert.FromBase64String(token);
+            }
+            catch
+            {
+                throw new UnauthorizedException("Invalid linking token");
+            }
+
+            if (decodedBytes.Length != 32)
+            {
+                throw new UnauthorizedException("Invalid linking token");
+            }
+
+            byte[] hashBytes = SHA256.HashData(decodedBytes);
+
+            var tokendb = await _context.DesktopLinkTokens
+                .Where(t => t.TokenHash == hashBytes)
+                .FirstOrDefaultAsync();
+
+            if (tokendb == null)
+            {
+                throw new UnauthorizedAccessException("Invalid linking token");
+            }
+
+            if (tokendb.IsUsed)
+            {
+                throw new UnauthorizedException("Invalid linking token");
+            }
+
+            if (tokendb.ExpiresAt < DateTimeOffset.UtcNow)
+            {
+                throw new UnauthorizedException("Invalid linking token");
+            }
+
+
+
+            var device = new Device
+            {
+                Id = Guid.NewGuid(),
+                UserId = tokendb.UserId,
+                DeviceName = command.DeviceName,
+                Platform = command.Platform,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.Devices.Add(device);
+            tokendb.MarkAsUsed();
+            await _context.SaveChangesAsync();
+
+            //working on JWT
+            var claims = new[]
+            {
+            new Claim("device_id", device.Id.ToString()),
+            new Claim("user_id", device.UserId.ToString()),
+            };
+
+            var jwtKey = _configuration["Jwt:Key"];
+            var keyBytes = Encoding.UTF8.GetBytes(jwtKey);
+
+            var securityKey = new SymmetricSecurityKey(keyBytes);
+
+            var credentials = new SigningCredentials(
+                securityKey,
+                SecurityAlgorithms.HmacSha256
+            );
+
+            var tokenDescriptor = new JwtSecurityToken(
+                issuer: _configuration["Jwt:Issuer"],
+                audience: _configuration["Jwt:Audience"],
+                claims: claims,
+                expires: DateTime.UtcNow.AddMinutes(
+                    _configuration.GetValue<int>("Jwt:ExpiryMinutes")
+                ),
+                signingCredentials: credentials
+            );
+
+            var handler = new JwtSecurityTokenHandler();
+            var tokenString = handler.WriteToken(tokenDescriptor);
+
+            return new LinkDesktopResponse
+            {
+                DeviceJwt = tokenString
+            };
         }
     }
 }
