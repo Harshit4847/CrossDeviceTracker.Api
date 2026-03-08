@@ -1,47 +1,67 @@
 # CrossDeviceTracker.Api
 
-A modern ASP.NET Core Web API for tracking user activities and sessions across multiple devices. Built with .NET 10.0 and Entity Framework Core with PostgreSQL.
+A backend API for tracking screen time and foreground application usage across multiple devices. Built with ASP.NET Core (.NET 10.0), Entity Framework Core, and PostgreSQL.
 
-## 🚀 Features
+The system measures active foreground app engagement time on desktop devices and synchronizes usage data to a centralized backend — similar to how Digital Wellbeing works, but across devices.
 
-- **Cross-Device Tracking**: Monitor user sessions across multiple devices
-- **RESTful API**: Clean and intuitive API endpoints
-- **Entity Framework Core**: Database-first approach with PostgreSQL
-- **Swagger/OpenAPI**: Built-in API documentation and testing interface
-- **Modern Architecture**: Clean separation of concerns with Controllers, Models, Services, and Data layers
+## Features
 
-## 🛠️ Technology Stack
+- **JWT Authentication** — User registration/login with email + password; JWT-based access tokens
+- **Desktop Device Linking** — One-time cryptographic link tokens (SHA-256 hashed, time-limited) to securely pair desktop apps
+- **Device Management** — Register, list, and manage multiple devices per user
+- **Time Log Tracking** — Record per-app screen time entries with app name, start/end time, and duration
+- **Cursor-Based Pagination** — Efficient paginated retrieval of time logs
+- **Global Exception Handling** — Custom middleware for consistent error responses (401, 403, 500)
+- **Swagger/OpenAPI** — Interactive API documentation available in all environments
 
-- **Framework**: .NET 10.0
-- **Database**: PostgreSQL with Npgsql.EntityFrameworkCore.PostgreSQL 10.0.0
-- **ORM**: Entity Framework Core 10.0.1
-- **API Documentation**: Swashbuckle.AspNetCore 10.1.0
-- **API Specification**: Microsoft.AspNetCore.OpenAPI 10.0.1
+## Technology Stack
 
-## 📁 Project Structure
+| Component | Technology |
+|---|---|
+| Framework | .NET 10.0 |
+| Database | PostgreSQL (via Npgsql 10.0.0) |
+| ORM | Entity Framework Core 10.0.1 |
+| Auth | JWT Bearer (Microsoft.AspNetCore.Authentication.JwtBearer 10.0.1) |
+| API Docs | Swashbuckle.AspNetCore 10.1.0 |
+| Testing | xUnit 2.9.3, EF Core InMemory |
+
+## Project Structure
 
 ```
 CrossDeviceTracker.Api/
-├── Controllers/          # API Controllers
-│   └── AuthController.cs
-├── Models/              # Data models
-│   ├── DTOs/           # Data Transfer Objects
-│   └── Entities/       # Database entities
-├── Data/               # Database context and migrations
-│   └── AppDbContext.cs
-├── Services/           # Business logic layer
-├── Properties/         # Project properties
-├── Program.cs          # Application entry point
-└── appsettings.json    # Configuration
+├── Controllers/
+│   ├── AuthController.cs         # Registration & login
+│   ├── DevicesController.cs      # Device CRUD & desktop linking
+│   └── TimeLogsController.cs     # Time log creation & retrieval
+├── Services/
+│   ├── AuthService.cs            # Auth business logic
+│   ├── DeviceService.cs          # Device & link token logic
+│   ├── TimeLogService.cs         # Time log business logic
+│   └── CurrentUserService.cs     # Extracts user from JWT claims
+├── Models/
+│   ├── Entities/                 # EF Core entities (User, Device, TimeLog, DesktopLinkToken)
+│   ├── DTOs/                     # Request/response models
+│   └── Commands/                 # Command models (LinkDesktopCommand)
+├── Data/
+│   └── AppDbContext.cs           # EF Core DbContext
+├── Exceptions/
+│   ├── ExceptionHandlingMiddleware.cs
+│   ├── UnauthorizedException.cs
+│   └── ForbiddenException.cs
+├── Migrations/                   # EF Core migrations
+├── CrossDeviceTracker.Api.Tests/ # Unit tests
+├── Program.cs                    # Application entry point
+├── appsettings.json              # Configuration template
+└── DESIGN.md                     # Full system design document
 ```
 
-## 🔧 Prerequisites
+## Prerequisites
 
 - [.NET 10.0 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
-- [PostgreSQL](https://www.postgresql.org/download/) (version 12 or higher recommended)
-- IDE: Visual Studio 2025, Visual Studio Code, or JetBrains Rider
+- [PostgreSQL](https://www.postgresql.org/download/) 12+
+- IDE: Visual Studio 2025, VS Code, or JetBrains Rider
 
-## 📦 Installation
+## Getting Started
 
 1. **Clone the repository**
    ```bash
@@ -49,18 +69,29 @@ CrossDeviceTracker.Api/
    cd CrossDeviceTracker.Api
    ```
 
-2. **Configure the database connection**
-   
-   Update the connection string in `appsettings.json` or `appsettings.Development.json`:
+2. **Configure settings**
+
+   Copy the template and fill in your values:
+   ```bash
+   cp appsettings.Development.json.template appsettings.Development.json
+   ```
+
+   Update `appsettings.Development.json`:
    ```json
    {
      "ConnectionStrings": {
-       "DefaultConnection": "Host=localhost;Database=crossdevicetracker;Username=your_username;Password=your_password"
+       "DefaultConnection": "Host=localhost;Port=5432;Database=ScreenTimeTrackerDB;Username=postgres;Password=YOUR_PASSWORD"
+     },
+     "Jwt": {
+       "Key": "YOUR_JWT_SECRET_KEY_HERE_MIN_32_CHARS",
+       "Issuer": "CrossDeviceTrackerAPI",
+       "Audience": "CrossDeviceTrackerClient",
+       "ExpiryMinutes": 60
      }
    }
    ```
 
-3. **Restore NuGet packages**
+3. **Restore packages**
    ```bash
    dotnet restore
    ```
@@ -75,101 +106,97 @@ CrossDeviceTracker.Api/
    dotnet run
    ```
 
-The API will be available at:
-- HTTPS: `https://localhost:7xxx`
-- HTTP: `http://localhost:5xxx`
+The API will be available at the URLs displayed in the console output. Swagger UI is accessible at `/swagger`.
 
-(Port numbers will be displayed in the console when the application starts)
+## API Endpoints
 
-## 📚 API Documentation
+### Auth (`/api/auth`)
 
-Once the application is running, access the Swagger UI documentation at:
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | `/api/auth/register` | No | Register a new user (email + password) |
+| POST | `/api/auth/token` | No | Login and receive a JWT access token |
 
-```
-https://localhost:7xxx/swagger
-```
+### Devices (`/api/devices`)
 
-This interactive interface allows you to:
-- View all available endpoints
-- Test API calls directly from the browser
-- See request/response schemas
-- Review API authentication requirements
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/devices` | JWT | List all devices for the authenticated user |
+| POST | `/api/devices` | JWT | Register a new device |
+| POST | `/api/devices/link-token` | JWT | Generate a one-time desktop link token |
+| POST | `/api/devices/link` | No | Link a desktop app using a link token |
 
-## 🔒 Authentication
+### Time Logs (`/api/timelogs`)
 
-The API includes an `AuthController` for handling authentication. Details will be added as the authentication implementation progresses.
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | `/api/timelogs` | JWT | Create a new time log entry |
+| GET | `/api/timelogs` | JWT | Get time logs (supports `?limit=` and `?cursor=` query params) |
 
-## 🗄️ Database
+## Database
 
-The project uses Entity Framework Core with PostgreSQL. The `AppDbContext` class manages the database context and entity configurations.
+The project uses Entity Framework Core with PostgreSQL. Four main entities:
 
-### Migrations
+- **User** — `Id`, `Email`, `PasswordHash`, `CreatedAt`
+- **Device** — `Id`, `UserId`, `DeviceName`, `Platform`, `CreatedAt`
+- **TimeLog** — `Id`, `UserId`, `DeviceId`, `AppName`, `StartTime`, `EndTime`, `DurationSeconds`, `CreatedAt`
+- **DesktopLinkToken** — `Id`, `UserId`, `TokenHash` (SHA-256), `ExpiresAt`, `IsUsed`, `CreatedAt`
 
-Create a new migration:
+### Migration Commands
+
 ```bash
+# Create a new migration
 dotnet ef migrations add MigrationName
-```
 
-Update the database:
-```bash
+# Apply migrations
 dotnet ef database update
-```
 
-Revert the last migration:
-```bash
+# Revert to a previous migration
 dotnet ef database update PreviousMigrationName
 ```
 
-## 🚦 Development
+## Desktop Linking Flow
 
-### Running in Development Mode
+1. User logs in on the website and generates a one-time link token (`POST /api/devices/link-token`)
+2. Backend generates a cryptographically secure random token, stores its SHA-256 hash, and returns the raw token
+3. User pastes the token into the desktop app
+4. Desktop app sends the token + device name + platform to `POST /api/devices/link`
+5. Backend validates the token (hash match, not expired, not used), creates a device record, and returns a device JWT
 
-The application is configured to run Swagger in all environments. Development-specific settings can be found in `appsettings.Development.json`.
+## Development
 
-### Debug Mode
+Swagger is enabled in all environments. Development-specific settings go in `appsettings.Development.json`.
 
-Using Visual Studio:
-- Press F5 to start debugging
+```bash
+# Run in development
+dotnet run
 
-Using VS Code:
-- Use the configured launch settings
-- Or run: `dotnet run --launch-profile https`
+# Run with a specific launch profile
+dotnet run --launch-profile https
+```
 
-## 🧪 Testing
+## Testing
 
-(Coming soon - Unit tests and integration tests will be added)
+Unit tests are located in `CrossDeviceTracker.Api.Tests/` and use xUnit with EF Core InMemory provider.
 
-## 📝 Contributing
+```bash
+dotnet test
+```
+
+## Contributing
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
+2. Create a feature branch (`git checkout -b feature/your-feature`)
+3. Commit your changes (`git commit -m 'Add your feature'`)
+4. Push to the branch (`git push origin feature/your-feature`)
 5. Open a Pull Request
 
-## 📄 License
+## License
 
-This project is currently unlicensed. Please contact the repository owner for usage rights.
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
 
-## 👤 Author
+## Author
 
 **Harshit Yadav**
 - GitHub: [@Harshit4847](https://github.com/Harshit4847)
 - Email: official.harshit@outlook.com
-
-## 🤝 Support
-
-For support, please open an issue in the GitHub repository.
-
-## 📅 Changelog
-
-### [Unreleased]
-- Initial project setup with basic structure
-- Added Entity Framework Core with PostgreSQL support
-- Integrated Swagger/OpenAPI documentation
-- Set up AuthController foundation
-- Configured DbContext and project architecture
-
----
-
-⭐ If you find this project useful, please consider giving it a star on GitHub!
