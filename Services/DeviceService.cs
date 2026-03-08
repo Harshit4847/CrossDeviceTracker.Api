@@ -120,7 +120,7 @@ namespace CrossDeviceTracker.Api.Services
             };
         }
 
-        async Task<LinkDesktopResponse> LinkDesktopAsync(LinkDesktopCommand command)
+        public async Task<LinkDesktopResponse> LinkDesktopAsync(LinkDesktopCommand command)
         {
             var token = command.LinkToken;
             //restroring peding
@@ -160,12 +160,11 @@ namespace CrossDeviceTracker.Api.Services
             byte[] hashBytes = SHA256.HashData(decodedBytes);
 
             var tokendb = await _context.DesktopLinkTokens
-                .Where(t => t.TokenHash == hashBytes)
-                .FirstOrDefaultAsync();
+                .SingleOrDefaultAsync(t => t.TokenHash == hashBytes);
 
             if (tokendb == null)
             {
-                throw new UnauthorizedAccessException("Invalid linking token");
+                throw new UnauthorizedException("Invalid linking token");
             }
 
             if (tokendb.IsUsed)
@@ -200,8 +199,13 @@ namespace CrossDeviceTracker.Api.Services
             new Claim("user_id", device.UserId.ToString()),
             };
 
-            var jwtKey = _configuration["Jwt:Key"];
+            var jwtKey = _configuration.GetValue<string>("Jwt:Key");
+            if(string.IsNullOrWhiteSpace(jwtKey))
+            {
+                throw new InvalidOperationException("JWT signing key is not configured.");
+            }
             var keyBytes = Encoding.UTF8.GetBytes(jwtKey);
+
 
             var securityKey = new SymmetricSecurityKey(keyBytes);
 
@@ -223,10 +227,7 @@ namespace CrossDeviceTracker.Api.Services
             var handler = new JwtSecurityTokenHandler();
             var tokenString = handler.WriteToken(tokenDescriptor);
 
-            return new LinkDesktopResponse
-            {
-                DeviceJwt = tokenString
-            };
+            return new LinkDesktopResponse(tokenString);
         }
     }
 }
