@@ -29,7 +29,7 @@ namespace CrossDeviceTracker.Api.Controllers
             {
                 return BadRequest("Request body is null");
             }
-            if (!userId.HasValue || userId.Value == Guid.Empty)
+            if(userId== Guid.Empty)
             {
                 return BadRequest("UserId is empty / invalid");
             }
@@ -50,7 +50,7 @@ namespace CrossDeviceTracker.Api.Controllers
             {
                 return BadRequest("DurationSeconds must be greater than zero");
             }
-            var response = await _timeLogService.CreateTimeLog(userId.Value, request);
+            var response = await _timeLogService.CreateTimeLog(userId, request);
 
 
             return Ok(response);
@@ -61,13 +61,13 @@ namespace CrossDeviceTracker.Api.Controllers
         public async Task<IActionResult> GetTimeLogsForUser([FromQuery] int? limit, [FromQuery] DateTime? cursor)
         {
             var userId = _currentUserService.UserId;
-            if (!userId.HasValue || userId.Value == Guid.Empty)
+            if (userId == Guid.Empty)
             {
                 return BadRequest("UserId is empty / invalid");
             }
             
 
-            var response = await _timeLogService.GetTimeLogsForUser(userId.Value, limit, cursor);
+            var response = await _timeLogService.GetTimeLogsForUser(userId, limit, cursor);
 
             return Ok(response);
         }
