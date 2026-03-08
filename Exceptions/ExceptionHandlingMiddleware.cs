@@ -19,6 +19,18 @@ namespace CrossDeviceTracker.Api.Exceptions
             {
                 await _next(context);
             }
+            catch (UnauthorizedException ex)
+            {
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                context.Response.ContentType = "application/json";
+
+                var response = new
+                {
+                    error = ex.Message
+                };
+
+                await context.Response.WriteAsync(JsonSerializer.Serialize(response));
+            }
             catch (ForbiddenException ex)
             {
                 context.Response.StatusCode = StatusCodes.Status403Forbidden;

@@ -2,8 +2,14 @@
 
 namespace CrossDeviceTracker.Api.Models.DTOs
 {
-    public class CreateDeviceRequest
+    public class LinkDesktopRequest
     {
+
+        [Required]
+        [MinLength(20)]
+        [MaxLength(200)]
+        public string LinkToken { get; set; } 
+
         [Required]
         [MinLength(1)]
         [MaxLength(100)]
@@ -11,8 +17,7 @@ namespace CrossDeviceTracker.Api.Models.DTOs
 
         [Required]
         [MinLength(1)]
-        [MaxLength(30)]
-        public string Platform {  get; set; }
-
+        [MaxLength(20)]
+        public string Platform { get; set; } 
     }
 }

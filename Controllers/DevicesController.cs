@@ -1,7 +1,8 @@
-﻿    using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using CrossDeviceTracker.Api.Services;
 using CrossDeviceTracker.Api.Models.DTOs;
 using Microsoft.AspNetCore.Authorization;
+using CrossDeviceTracker.Api.Models.Commands;
 
 namespace CrossDeviceTracker.Api.Controllers
 {
@@ -23,12 +24,8 @@ namespace CrossDeviceTracker.Api.Controllers
         public IActionResult GetDevicesForUser()
         {
             var userId = _currentUserService.UserId;
-            if (userId == null || userId == Guid.Empty)
-            {
-                return Unauthorized("UserId is invalid");
-            }
 
-            var responses = _deviceService.GetDevicesForUser(userId.Value);
+            var responses = _deviceService.GetDevicesForUser(userId);
             return Ok(responses);
         }
 
@@ -37,32 +34,10 @@ namespace CrossDeviceTracker.Api.Controllers
         public IActionResult CreateDevice([FromBody] CreateDeviceRequest request)
         {
             var userId = _currentUserService.UserId;
-            if (userId == null || userId == Guid.Empty)
-            {
-                return Unauthorized("UserId is invalid");
-            }
 
-            if (request == null)
-            {
-                return BadRequest("Request body is null");
-            }
+            var response = _deviceService.CreateDevice(userId, request);
 
-            if (string.IsNullOrWhiteSpace(request.DeviceName))
-            {
-                return BadRequest("DeviceName is required");
-            }
-
-            if (string.IsNullOrWhiteSpace(request.Platform))
-            {
-                return BadRequest("Platform is required");
-            }
-
-            var response = _deviceService.CreateDevice(userId.Value, request);
-
-            
             return CreatedAtAction(nameof(GetDevicesForUser), new { userId }, response.Device);
-            
-
             
         }
 
@@ -71,10 +46,18 @@ namespace CrossDeviceTracker.Api.Controllers
         public async Task<IActionResult> GenerateDesktopLinkToken()
         {
             var userId = _currentUserService.UserId;
-            if (userId == null || userId == Guid.Empty)
-                return Unauthorized("UserId is invalid");
 
-            var response = await _deviceService.GenerateDesktopLinkTokenAsync(userId.Value);
+            var response = await _deviceService.GenerateDesktopLinkTokenAsync(userId);
+            return Ok(response);
+        }
+
+        [HttpPost("link")]
+        public async Task<IActionResult> LinkDesktopAsync([FromBody] LinkDesktopRequest request)
+        {
+
+            var command = new LinkDesktopCommand(request.LinkToken,request.DeviceName,request.Platform);
+
+            var response = await _deviceService.LinkDesktopAsync(command);
             return Ok(response);
         }
     }
