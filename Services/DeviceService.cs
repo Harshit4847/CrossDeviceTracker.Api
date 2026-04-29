@@ -18,7 +18,7 @@ namespace CrossDeviceTracker.Api.Services
 {
     public class DeviceService : IDeviceService
     {
-        public readonly AppDbContext _context;
+        private readonly AppDbContext _context;
         private readonly IConfiguration _configuration;
 
         public DeviceService(AppDbContext context, IConfiguration configuration)
