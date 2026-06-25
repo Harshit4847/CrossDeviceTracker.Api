@@ -229,7 +229,7 @@ namespace CrossDeviceTracker.Api.Services
             var handler = new JwtSecurityTokenHandler();
             var tokenString = handler.WriteToken(tokenDescriptor);
 
-            return new LinkDesktopResponse(tokenString);
+            return new LinkDesktopResponse(tokenString, device.Id);
         }
     }
 }
