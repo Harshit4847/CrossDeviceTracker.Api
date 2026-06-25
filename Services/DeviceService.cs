@@ -195,8 +195,10 @@ namespace CrossDeviceTracker.Api.Services
             //working on JWT
             var claims = new[]
             {
-            new Claim("device_id", device.Id.ToString()),
-            new Claim("user_id", device.UserId.ToString()),
+                new Claim(JwtRegisteredClaimNames.Sub, device.UserId.ToString()),
+
+                new Claim("user_id", device.UserId.ToString()),
+                new Claim("device_id", device.Id.ToString()),
             };
 
             var jwtKey = _configuration.GetValue<string>("Jwt:Key");
