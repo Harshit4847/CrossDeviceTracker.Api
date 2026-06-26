@@ -2,9 +2,7 @@ using CrossDeviceTracker.Api.Models.DTOs;
 using CrossDeviceTracker.Api.Services;
 using CrossDeviceTracker.Api.Data;
 using Xunit;
-using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.InMemory;
 using System;
 using System.Threading.Tasks;
 
@@ -14,14 +12,25 @@ namespace CrossDeviceTracker.Api.Tests.Services
     {
         private readonly TimeLogService _service;
 
+        private sealed class FakeCurrentDeviceService : ICurrentDeviceService
+        {
+            public Guid DeviceId { get; } = Guid.NewGuid();
+        }
+
         public TimeLogServiceTests()
         {
             var options = new DbContextOptionsBuilder<AppDbContext>()
-                .UseInMemoryDatabase(databaseName: "TestDatabase")
+                .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
                 .Options;
-            
+
             var context = new AppDbContext(options);
-            _service = new TimeLogService(context);
+
+            var currentDeviceService = new FakeCurrentDeviceService();
+
+            _service = new TimeLogService(
+                context,
+                currentDeviceService
+            );
         }
 
         [Fact]
