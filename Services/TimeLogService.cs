@@ -10,13 +10,15 @@ namespace CrossDeviceTracker.Api.Services
     public class TimeLogService : ITimeLogService
     {
         private readonly AppDbContext _context;
+        private readonly ICurrentDeviceService _currentDeviceService;
         private const int MaxLimit = 50;
         private const int DefaultLimit = 20;
         
 
-        public TimeLogService(AppDbContext context)
+        public TimeLogService(AppDbContext context, ICurrentDeviceService currentDeviceService)
         {
             _context = context;
+            _currentDeviceService = currentDeviceService;
         }
 
         public async Task<PaginatedTimeLogsResponse> GetTimeLogsForUser(Guid userId, int? limit, DateTime? cursor)
@@ -53,18 +55,25 @@ namespace CrossDeviceTracker.Api.Services
                 throw new ArgumentException("DurationSeconds must be greater than 0", nameof(request.DurationSeconds));
             }
 
-            var deviceExists = await _context.Devices.AnyAsync(d => d.UserId == userid && d.Id == request.DeviceId );
+            var deviceId = _currentDeviceService.DeviceId;
 
-            if (!deviceExists)
+            var device = await _context.Devices.FirstOrDefaultAsync(d => d.Id == deviceId);
+
+            if (device == null)
             {
-                throw new ForbiddenException("Device not found for the user");
+                throw new ForbiddenException("Device not found.");
+            }
+
+            if (device.UserId != userid)
+            {
+                throw new ForbiddenException("Device does not belong to the current user.");
             }
 
             var timeLog = new TimeLog
             {
                 Id = Guid.NewGuid(),
                 UserId = userid,
-                DeviceId = request.DeviceId,
+                DeviceId = deviceId,
                 AppName = request.AppName,
                 StartTime = request.StartTime,
                 EndTime = request.StartTime.AddSeconds(request.DurationSeconds),

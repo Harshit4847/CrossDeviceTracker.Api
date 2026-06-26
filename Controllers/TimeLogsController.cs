@@ -33,10 +33,6 @@ namespace CrossDeviceTracker.Api.Controllers
             {
                 return BadRequest("UserId is empty / invalid");
             }
-            if(request.DeviceId == Guid.Empty)
-            {
-                return BadRequest("DeviceId is empty / invalid");
-            }
             if(string.IsNullOrWhiteSpace(request.AppName))
             {
                 return BadRequest("AppName is required");
