@@ -1,0 +1,5 @@
+{
+    "appService.preDeployTask": "publish-release",
+    "appService.deploySubpath": "bin/Release/net10.0/publish",
+    "appService.defaultWebAppToDeploy": "/subscriptions/a122ffb1-c50b-4210-aa92-6f3b8d254ab8/resourceGroups/CrossDeviceTracker-RG/providers/Microsoft.Web/sites/crossdevicetracker-api-hy"
+}
