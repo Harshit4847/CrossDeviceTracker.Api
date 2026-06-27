@@ -2,15 +2,17 @@
 
 A backend API for tracking screen time and foreground application usage across multiple devices. Built with ASP.NET Core (.NET 10.0), Entity Framework Core, and PostgreSQL.
 
-The system measures active foreground app engagement time on desktop devices and synchronizes usage data to a centralized backend — similar to how Digital Wellbeing works, but across devices.
+The system measures active foreground app engagement time on desktop and mobile devices and synchronizes usage data to a centralized backend — similar to how Digital Wellbeing works, but across devices.
 
 ## Features
 
-- **JWT Authentication** — User registration/login with email + password; JWT-based access tokens
+- **Dual JWT Authentication** — User JWT for website/API access; Device JWT for device-originated data (time logs)
 - **Desktop Device Linking** — One-time cryptographic link tokens (SHA-256 hashed, time-limited) to securely pair desktop apps
+- **Mobile Device Registration** — Android devices register via User JWT with `InstallationId` for idempotent pairing
+- **Device Identity from JWT Claims** — `DeviceId` is extracted from Device JWT claims, never from request bodies
 - **Device Management** — Register, list, and manage multiple devices per user
-- **Time Log Tracking** — Record per-app screen time entries with app name, start/end time, and duration
-- **Cursor-Based Pagination** — Efficient paginated retrieval of time logs
+- **Time Log Tracking** — Record per-app screen time entries with app name, start time, and duration
+- **Cursor-Based Pagination** — Efficient paginated retrieval of time logs using `StartTime` keyset
 - **Global Exception Handling** — Custom middleware for consistent error responses (401, 403, 500)
 - **Swagger/OpenAPI** — Interactive API documentation available in all environments
 
@@ -37,7 +39,8 @@ CrossDeviceTracker.Api/
 │   ├── AuthService.cs            # Auth business logic
 │   ├── DeviceService.cs          # Device & link token logic
 │   ├── TimeLogService.cs         # Time log business logic
-│   └── CurrentUserService.cs     # Extracts user from JWT claims
+│   ├── CurrentUserService.cs     # Extracts UserId from JWT claims
+│   └── CurrentDeviceService.cs   # Extracts DeviceId from Device JWT claims
 ├── Models/
 │   ├── Entities/                 # EF Core entities (User, Device, TimeLog, DesktopLinkToken)
 │   ├── DTOs/                     # Request/response models
@@ -115,22 +118,22 @@ The API will be available at the URLs displayed in the console output. Swagger U
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
 | POST | `/api/auth/register` | No | Register a new user (email + password) |
-| POST | `/api/auth/token` | No | Login and receive a JWT access token |
+| POST | `/api/auth/token` | No | Login and receive a User JWT access token |
 
 ### Devices (`/api/devices`)
 
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
-| GET | `/api/devices` | JWT | List all devices for the authenticated user |
-| POST | `/api/devices` | JWT | Register a new device |
-| POST | `/api/devices/link-token` | JWT | Generate a one-time desktop link token |
-| POST | `/api/devices/link` | No | Link a desktop app using a link token |
+| GET | `/api/devices` | User JWT | List all devices for the authenticated user |
+| POST | `/api/devices` | User JWT | Register a new device (mobile — uses `InstallationId`) |
+| POST | `/api/devices/link-token` | User JWT | Generate a one-time desktop link token |
+| POST | `/api/devices/link` | No | Link a desktop app using a link token; returns a Device JWT |
 
 ### Time Logs (`/api/timelogs`)
 
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
-| POST | `/api/timelogs` | JWT | Create a new time log entry |
+| POST | `/api/timelogs` | Device JWT | Create a time log entry (DeviceId extracted from JWT claims) |
 | GET | `/api/timelogs` | JWT | Get time logs (supports `?limit=` and `?cursor=` query params) |
 
 ## Database
@@ -141,6 +144,17 @@ The project uses Entity Framework Core with PostgreSQL. Four main entities:
 - **Device** — `Id`, `UserId`, `DeviceName`, `Platform`, `CreatedAt`
 - **TimeLog** — `Id`, `UserId`, `DeviceId`, `AppName`, `StartTime`, `EndTime`, `DurationSeconds`, `CreatedAt`
 - **DesktopLinkToken** — `Id`, `UserId`, `TokenHash` (SHA-256), `ExpiresAt`, `IsUsed`, `CreatedAt`
+
+### Authentication Model
+
+The system uses two types of JWTs:
+
+| Token Type | Issued To | Claims | Used For |
+|------------|-----------|--------|----------|
+| User JWT | Website / Mobile app | `user_id` | User-level operations (device management, analytics) |
+| Device JWT | Desktop / Mobile device | `device_id`, `user_id`, `token_version` | Device-originated data (time log submission) |
+
+Device identity is always derived from JWT claims — the API never accepts `DeviceId` from request bodies.
 
 ### Migration Commands
 
@@ -155,17 +169,25 @@ dotnet ef database update
 dotnet ef database update PreviousMigrationName
 ```
 
-## Desktop Linking Flow
+## Device Linking Flows
+
+### Desktop Linking (Link Token)
 
 1. User logs in on the website and generates a one-time link token (`POST /api/devices/link-token`)
-2. Backend generates a cryptographically secure random token, stores its SHA-256 hash, and returns the raw token
+2. Backend generates a cryptographically secure random token (32 bytes), stores its SHA-256 hash, and returns the raw token as URL-safe Base64
 3. User pastes the token into the desktop app
 4. Desktop app sends the token + device name + platform to `POST /api/devices/link`
-5. Backend validates the token (hash match, not expired, not used), creates a device record, and returns a device JWT
+5. Backend validates the token (hash match, not expired, not used), creates a device record, and returns a Device JWT
+
+### Mobile Registration
+
+1. User logs in on the mobile app and receives a User JWT (`POST /api/auth/token`)
+2. Mobile app registers the device (`POST /api/devices`) with `DeviceName`, `Platform`, and `InstallationId`
+3. Backend creates a device record (or reuses existing one for the same `UserId` + `InstallationId`)
 
 ## Development
 
-Swagger is enabled in all environments. Development-specific settings go in `appsettings.Development.json`.
+Swagger is enabled in all environments and accessible at `/swagger`. Development-specific settings go in `appsettings.Development.json`.
 
 ```bash
 # Run in development
@@ -174,6 +196,10 @@ dotnet run
 # Run with a specific launch profile
 dotnet run --launch-profile https
 ```
+
+### Related Projects
+
+- [CrossDeviceTracker.Desktop](https://github.com/Harshit4847/CrossDeviceTracker.Desktop) — Windows desktop client (foreground window tracking, offline-first sync)
 
 ## Testing
 
