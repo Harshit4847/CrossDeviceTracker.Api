@@ -216,13 +216,13 @@ namespace CrossDeviceTracker.Api.Services
                 SecurityAlgorithms.HmacSha256
             );
 
+            var deviceJwtExpiryDays = _configuration.GetValue<int>("DeviceJwt:ExpiryDays", 365);
+
             var tokenDescriptor = new JwtSecurityToken(
                 issuer: _configuration["Jwt:Issuer"],
                 audience: _configuration["Jwt:Audience"],
                 claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(
-                    _configuration.GetValue<int>("Jwt:ExpiryMinutes")
-                ),
+                expires: DateTime.UtcNow.AddDays(deviceJwtExpiryDays),
                 signingCredentials: credentials
             );
 
