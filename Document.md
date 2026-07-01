@@ -1,9 +1,11 @@
 # Cross Device Screen Time Tracker — Project Documentation
 
 > **Author:** Harshit Yadav  
-> **Last Updated:** March 3, 2026  
-> **Version:** 1.0  
+> **Last Updated:** July 1, 2026  
+> **Version:** 1.1  
 > **Repository:** [github.com/Harshit4847/CrossDeviceTracker.Api](https://github.com/Harshit4847/CrossDeviceTracker.Api)
+
+> This document reflects the current implementation in the repository as of July 1, 2026.
 
 ---
 
@@ -422,14 +424,14 @@ This is the **only entity with domain-driven design principles** applied. It is 
 
 ### 9.1 Authentication Model
 
-The system uses **two types of JWT tokens**:
+The system uses two token shapes in the current implementation:
 
-| Token Type | Issued To | Contains | Used For |
-|-----------|-----------|----------|----------|
-| **User JWT** | Website users | `Sub` (UserId), `Email` | Web dashboard, device management, link token generation |
-| **Device JWT** | Desktop applications | `DeviceId`, `UserId`, `TokenVersion` | Time log submission (planned) |
+| Token Type | Issued To | Claims | Used For |
+|-----------|-----------|--------|----------|
+| **User JWT** | Website / API clients | `sub`/`user_id`, `email` | User-level actions such as device registration and link-token generation |
+| **Device JWT** | Desktop/device clients | `device_id`, `user_id` | Device-originated time-log submission |
 
-Currently, only **User JWT** is implemented.
+The backend currently issues and validates both token shapes. User JWTs are created by `AuthService`, while device JWTs are issued by `DeviceService.LinkDesktopAsync` after a successful link-token exchange.
 
 ### 9.2 User JWT Details
 
@@ -508,20 +510,19 @@ Desktop apps cannot use OAuth redirect flows easily. Instead of asking users to 
 - If database is compromised, attacker cannot reconstruct raw tokens
 - URL-safe Base64 encoding ensures safe copy-paste across platforms
 
-### 10.3 Token Consumption (`POST /api/devices/link`) — Planned
+### 10.3 Token Consumption (`POST /api/devices/link`) — Implemented
 
-**Designed flow (not yet fully implemented):**
+**Current flow:**
 
-1. Desktop sends: raw token + DeviceName + Platform
-2. Backend decodes URL-safe Base64 → raw bytes
-3. Computes SHA256 hash
-4. Queries `DesktopLinkTokens` by hash
-5. Validates: exists, not expired, not used
-6. Calls `MarkAsUsed()` on entity
-7. Creates new `Device` record
-8. Generates Device JWT
-9. Returns Device JWT to desktop app
-10. All within a single database transaction
+1. Desktop sends the raw link token, device name, and platform.
+2. Backend decodes the URL-safe Base64 token into raw bytes.
+3. Computes the SHA256 hash and looks up the matching token record.
+4. Validates that the token exists, is still unused, and has not expired.
+5. Marks the token as used and creates a new `Device` record.
+6. Generates a Device JWT containing `device_id` and `user_id` claims.
+7. Returns the Device JWT plus the new device ID to the client.
+
+The implementation currently performs these steps in a straightforward EF Core save flow; a dedicated transaction wrapper is not yet introduced.
 
 ### 10.4 Concurrency Protection
 
@@ -643,8 +644,18 @@ Generates a one-time token for desktop linking. Previous unused tokens for the u
 
 #### `POST /api/devices/link`
 
-**Auth:** Bearer token (User JWT)  
-**Status:** Endpoint stub exists but implementation is incomplete.
+**Auth:** No bearer token required; the one-time link token is the credential.  
+**Status:** Implemented.
+
+**Success Response (200 OK):**
+```json
+{
+  "deviceJwt": "eyJhbGci...",
+  "deviceId": "guid"
+}
+```
+
+The endpoint validates the link token, creates the device record, marks the token as used, and returns a Device JWT for future device-authenticated requests.
 
 ---
 
@@ -652,11 +663,10 @@ Generates a one-time token for desktop linking. Previous unused tokens for the u
 
 #### `POST /api/timelogs`
 
-**Auth:** Bearer token (User JWT)  
+**Auth:** Bearer token (Device JWT containing `device_id` and `user_id` claims)  
 **Request Body:**
 ```json
 {
-  "deviceId": "guid",
   "appName": "Visual Studio Code",
   "startTime": "2026-03-03T08:00:00Z",
   "durationSeconds": 3600
@@ -678,14 +688,14 @@ Generates a one-time token for desktop linking. Previous unused tokens for the u
 
 **Validation (Controller level):**
 - Request body must not be null
-- UserId must be valid (from JWT)
-- DeviceId must not be `Guid.Empty`
+- UserId must be valid (derived from JWT claims)
 - AppName must not be empty
 - StartTime must not be in the future
 - DurationSeconds must be > 0
 
 **Validation (Service level):**
-- Device must belong to the authenticated user (`ForbiddenException` if not)
+- The authenticated device must exist
+- The device must belong to the authenticated user (`ForbiddenException` if not)
 
 **Server Behavior:**
 - `EndTime` is computed by server: `StartTime + DurationSeconds`
@@ -747,10 +757,10 @@ builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 
 | Method | Behavior |
 |--------|----------|
-| `CreateDevice(userId, request)` | Creates device entity → saves → returns `DeviceResult` |
+| `CreateDevice(userId, request)` | Creates a basic device entity for the authenticated user and returns the created device |
 | `GetDevicesForUser(userId)` | Queries devices with `AsNoTracking()` → maps to `DeviceResponse` list |
-| `GenerateDesktopLinkTokenAsync(userId)` | Generates crypto token → hashes → stores hash → returns raw token |
-| `LinkDesktopAsync(command)` | **Not yet implemented** |
+| `GenerateDesktopLinkTokenAsync(userId)` | Generates a crypto token → hashes it → stores the hash → returns the raw token |
+| `LinkDesktopAsync(command)` | Validates the token, marks it as used, creates the device, and issues a Device JWT |
 
 ### 12.5 TimeLogService
 
@@ -1092,38 +1102,37 @@ dotnet ef database update PreviousMigrationName
 |---------|--------|-------|
 | User registration | Done | Email + password, duplicate check |
 | User login + JWT | Done | HMAC-SHA256, configurable expiry |
-| Device creation (mobile path) | Done | POST /api/devices |
+| Device creation | Done | Basic device registration via POST /api/devices |
 | List user devices | Done | GET /api/devices |
 | Desktop link token generation | Done | Crypto-secure, SHA256 hashed |
-| Desktop link token consumption | **Incomplete** | Endpoint stub exists, `LinkDesktopAsync` not implemented |
+| Desktop link token consumption | Done | Validates token, creates device, returns Device JWT |
 | Time log creation | Done | Server-computed EndTime, device ownership validation |
 | Time log retrieval (paginated) | Done | Cursor-based pagination |
-| Device JWT issuance | **Not started** | Designed but not implemented |
-| Device revocation | **Not started** | `IsRevoked`, `TokenVersion` not on Device entity |
+| Device JWT issuance | Done | Implemented in the desktop link flow |
+| Device revocation | **Not started** | No device-revocation or token-version support yet |
 | Batch time log sync | **Not started** | Single log creation only |
 | Exception handling middleware | Done | 401, 403, 500 mapping |
 | CORS | Done (dev mode) | AllowAll — needs restriction for production |
 | Swagger documentation | Done | Available in all environments |
-| Unit tests | Partial | Only TimeLogService basic tests |
+| Unit tests | Partial | TimeLogService coverage exists; broader service/controller tests are still missing |
 
 ---
 
 ## 22. Known Issues & Incomplete Work
 
-### 22.1 Code Issues
+### 22.1 Current Gaps
 
-1. **`DevicesController.LinkDesktopRequest` method doesn't compile:**
-   - `LinkDesktopAsync()` is called with no arguments but the interface requires a `LinkDesktopCommand`
-   - Response handling is incomplete (missing closing brace and return)
+1. **Mobile-specific registration is not fully implemented:**
+   - The current API supports basic device creation through `POST /api/devices`, but there is no `InstallationId`-based deduplication flow yet.
 
-2. **`DeviceService.LinkDesktopAsync` has a placeholder body:**
-   - Returns `return;` in a `Task<LinkDesktopRequest>` method — does not compile
+2. **Device revocation is not implemented:**
+   - There is no revoke/logout flow, no token-version tracking, and no dedicated device-status endpoint.
 
-3. **Connection string logged at startup:**
-   - `Program.cs` logs the full connection string value, which is a security concern for production
+3. **Connection string logging remains in startup code:**
+   - `Program.cs` still prints the configured connection string value, which is a security concern for production.
 
-4. **`IDeviceService.LinkDesktopAsync` return type mismatch:**
-   - Interface declares `Task<LinkDesktopRequest>` but should likely return `Task<LinkDesktopResponse>`
+4. **CORS is permissive in development:**
+   - The current `AllowAll` policy is fine for local testing, but should be restricted for production deployments.
 
 ### 22.2 Missing Features vs DESIGN.md
 
@@ -1132,9 +1141,9 @@ dotnet ef database update PreviousMigrationName
 | `Device.IsRevoked` field | Not in entity |
 | `Device.TokenVersion` field | Not in entity |
 | `Device.LastDataSyncAt` field | Not in entity |
-| Device JWT (separate from User JWT) | Not implemented |
+| Device JWT validation middleware | Not implemented; claim validation currently lives in services |
 | Token revocation (increment TokenVersion) | Not implemented |
-| Constant-time hash comparison for tokens | Not implemented (using EF query) |
+| Constant-time hash comparison for tokens | Not implemented (current code uses a direct EF query by hash) |
 | Batch time log submission | Not implemented (single log only) |
 | Duration tolerance validation | Not implemented |
 | Time drift validation | Not implemented |
