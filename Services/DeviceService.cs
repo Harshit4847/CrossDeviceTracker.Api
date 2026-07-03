@@ -1,4 +1,4 @@
-﻿using CrossDeviceTracker.Api.Data;
+using CrossDeviceTracker.Api.Data;
 using CrossDeviceTracker.Api.Exceptions;
 using CrossDeviceTracker.Api.Models.Commands;
 using CrossDeviceTracker.Api.Models.DTOs;
@@ -20,39 +20,85 @@ namespace CrossDeviceTracker.Api.Services
     {
         private readonly AppDbContext _context;
         private readonly IConfiguration _configuration;
+        private readonly IDeviceJwtService _deviceJwtService;
 
-        public DeviceService(AppDbContext context, IConfiguration configuration)
+        public DeviceService(AppDbContext context, IConfiguration configuration, IDeviceJwtService deviceJwtService)
         {
             _context = context;
             _configuration = configuration;
+            _deviceJwtService = deviceJwtService;
         }
 
-        public DeviceResult CreateDevice(Guid UserId, CreateDeviceRequest request)
+        public RegisterDeviceResponse CreateDevice(Guid UserId, CreateDeviceRequest request)
         {
+            Device device;
+            bool wasCreated;
 
-            DeviceResult result = new DeviceResult();
-            var response = new DeviceResponse();
-
-            var entity = new Device
+            if (!string.IsNullOrWhiteSpace(request.InstallationId))
             {
-                Id = Guid.NewGuid(),
-                UserId = UserId,
-                DeviceName = request.DeviceName,
-                Platform = request.Platform,
-                CreatedAt = DateTime.UtcNow,
+                var existingDevice = _context.Devices
+                    .SingleOrDefault(x =>
+                        x.UserId == UserId &&
+                        x.InstallationId == request.InstallationId);
+
+                if (existingDevice != null)
+                {
+                    device = existingDevice;
+                    wasCreated = false;
+                }
+                else
+                {
+                    device = new Device
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = UserId,
+                        DeviceName = request.DeviceName,
+                        Platform = request.Platform,
+                        InstallationId = request.InstallationId,
+                        TokenVersion = 1,
+                        IsRevoked = false,
+                        LastDataSyncAt = null,
+                        CreatedAt = DateTime.UtcNow,
+                    };
+
+                    _context.Devices.Add(device);
+                    _context.SaveChanges();
+                    wasCreated = true;
+                }
+            }
+            else
+            {
+                device = new Device
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = UserId,
+                    DeviceName = request.DeviceName,
+                    Platform = request.Platform,
+                    InstallationId = request.InstallationId,
+                    TokenVersion = 1,
+                    IsRevoked = false,
+                    LastDataSyncAt = null,
+                    CreatedAt = DateTime.UtcNow,
+                };
+
+                _context.Devices.Add(device);
+                _context.SaveChanges();
+                wasCreated = true;
+            }
+
+            var deviceJwt = _deviceJwtService.GenerateDeviceJwt(
+                device.Id,
+                device.UserId,
+                device.TokenVersion);
+
+            return new RegisterDeviceResponse
+            {
+                DeviceId = device.Id,
+                DeviceJwt = deviceJwt,
+                WasCreated = wasCreated,
+                DeviceName = device.DeviceName,
+                Platform = device.Platform
             };
-
-            _context.Devices.Add(entity);
-            _context.SaveChanges();
-
-            response.Platform = entity.Platform;
-            response.Id = entity.Id;
-            response.UserId = entity.UserId;
-            response.DeviceName = entity.DeviceName;
-            response.CreatedAt = entity.CreatedAt;
-
-            result.Device = response;
-            return result;
         }
 
         public List<DeviceResponse> GetDevicesForUser(Guid userId)
@@ -72,12 +118,32 @@ namespace CrossDeviceTracker.Api.Services
                     UserId = device.UserId,
                     DeviceName = device.DeviceName,
                     Platform = device.Platform,
+                    InstallationId = device.InstallationId,
+                    TokenVersion = device.TokenVersion,
+                    IsRevoked = device.IsRevoked,
+                    LastDataSyncAt = device.LastDataSyncAt,
                     CreatedAt = device.CreatedAt
 
                 });
             }
 
             return responses;
+        }
+
+        private static DeviceResponse MapToDeviceResponse(Device device)
+        {
+            return new DeviceResponse
+            {
+                Id = device.Id,
+                UserId = device.UserId,
+                DeviceName = device.DeviceName,
+                Platform = device.Platform,
+                InstallationId = device.InstallationId,
+                TokenVersion = device.TokenVersion,
+                IsRevoked = device.IsRevoked,
+                LastDataSyncAt = device.LastDataSyncAt,
+                CreatedAt = device.CreatedAt
+            };
         }
 
         public async Task<GenerateDesktopLinkTokenResponse> GenerateDesktopLinkTokenAsync(Guid userId)
@@ -185,6 +251,10 @@ namespace CrossDeviceTracker.Api.Services
                 UserId = tokendb.UserId,
                 DeviceName = command.DeviceName,
                 Platform = command.Platform,
+                InstallationId = null,
+                TokenVersion = 1,
+                IsRevoked = false,
+                LastDataSyncAt = null,
                 CreatedAt = DateTime.UtcNow
             };
 

@@ -14,5 +14,8 @@
     "Audience": "CrossDeviceTrackerClient",
     "ExpiryMinutes": 60
   },
+  "DeviceJwt": {
+    "ExpiryDays": 365
+  },
   "AllowedHosts": "*"
 }

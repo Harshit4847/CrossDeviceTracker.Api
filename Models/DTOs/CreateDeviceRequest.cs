@@ -14,5 +14,8 @@ namespace CrossDeviceTracker.Api.Models.DTOs
         [MaxLength(30)]
         public string Platform {  get; set; }
 
+        [MaxLength(100)]
+        public string? InstallationId { get; set; }
+
     }
 }

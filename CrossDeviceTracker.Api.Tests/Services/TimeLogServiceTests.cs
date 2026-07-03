@@ -5,16 +5,27 @@ using Xunit;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Threading.Tasks;
+using CrossDeviceTracker.Api.Models.Entities;
+using Microsoft.Extensions.Configuration;
 
 namespace CrossDeviceTracker.Api.Tests.Services
 {
     public class TimeLogServiceTests
     {
         private readonly TimeLogService _service;
+        private readonly AppDbContext _context;
 
         private sealed class FakeCurrentDeviceService : ICurrentDeviceService
         {
             public Guid DeviceId { get; } = Guid.NewGuid();
+        }
+
+        private sealed class FakeDeviceJwtService : IDeviceJwtService
+        {
+            public string GenerateDeviceJwt(Guid deviceId, Guid userId, int tokenVersion)
+            {
+                return "fake-jwt-token";
+            }
         }
 
         public TimeLogServiceTests()
@@ -23,12 +34,12 @@ namespace CrossDeviceTracker.Api.Tests.Services
                 .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
                 .Options;
 
-            var context = new AppDbContext(options);
+            _context = new AppDbContext(options);
 
             var currentDeviceService = new FakeCurrentDeviceService();
 
             _service = new TimeLogService(
-                context,
+                _context,
                 currentDeviceService
             );
         }
@@ -58,6 +69,40 @@ namespace CrossDeviceTracker.Api.Tests.Services
 
             // Assert
             Assert.IsType<PaginatedTimeLogsResponse>(result);
+        }
+
+        [Fact]
+        public void CreateDevice_ShouldPopulateTrackingFields()
+        {
+            // Arrange
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new System.Collections.Generic.Dictionary<string, string?>
+                {
+                    { "Jwt:Key", "test-key-for-jwt-signing-1234567890123456" },
+                    { "Jwt:Issuer", "test-issuer" },
+                    { "Jwt:Audience", "test-audience" },
+                    { "Jwt:ExpiryMinutes", "60" }
+                })
+                .Build();
+            var deviceJwtService = new FakeDeviceJwtService();
+            var service = new DeviceService(_context, configuration, deviceJwtService);
+            var userId = Guid.NewGuid();
+            var request = new CreateDeviceRequest
+            {
+                DeviceName = "Pixel 8",
+                Platform = "Android",
+                InstallationId = "install-123"
+            };
+
+            // Act
+            var result = service.CreateDevice(userId, request);
+
+            // Assert
+            Assert.True(result.WasCreated);
+            Assert.Equal("Pixel 8", result.DeviceName);
+            Assert.Equal("Android", result.Platform);
+            Assert.NotEqual(Guid.Empty, result.DeviceId);
+            Assert.NotNull(result.DeviceJwt);
         }
     }
 }

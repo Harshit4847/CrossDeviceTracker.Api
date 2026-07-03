@@ -4,9 +4,9 @@ using CrossDeviceTracker.Api.Models.Commands;
 namespace CrossDeviceTracker.Api.Services
 {
     public interface IDeviceService
-    {   
+    {
         //for android and mac
-        DeviceResult CreateDevice(Guid UserId, CreateDeviceRequest request);
+        RegisterDeviceResponse CreateDevice(Guid UserId, CreateDeviceRequest request);
         List<DeviceResponse> GetDevicesForUser(Guid userId);
 
         //for desktop

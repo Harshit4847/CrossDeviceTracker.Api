@@ -7,6 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="CrossDeviceTracker.Api.Tests\**" />
+    <Content Remove="CrossDeviceTracker.Api.Tests\**" />
+    <EmbeddedResource Remove="CrossDeviceTracker.Api.Tests\**" />
+    <None Remove="CrossDeviceTracker.Api.Tests\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.1" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.1" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.1" />

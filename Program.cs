@@ -26,6 +26,7 @@ builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddAuthorization();
 
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IDeviceJwtService, DeviceJwtService>();
 
 //db
 var env = builder.Environment.EnvironmentName;

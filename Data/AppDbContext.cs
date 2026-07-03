@@ -69,7 +69,16 @@ namespace CrossDeviceTracker.Api.Data
                 entity.Property(d => d.Platform)
                       .IsRequired()
                       .HasMaxLength(100);
+                entity.Property(d => d.InstallationId)
+                      .HasMaxLength(100);
+                entity.Property(d => d.TokenVersion)
+                      .IsRequired();
+                entity.Property(d => d.IsRevoked)
+                      .IsRequired();
+                entity.Property(d => d.LastDataSyncAt);
                 entity.Property(d => d.CreatedAt);
+                entity.HasIndex(d => new { d.UserId, d.InstallationId })
+                      .IsUnique();
                 entity.HasOne<User>()
                       .WithMany()
                       .HasForeignKey(d => d.UserId)
