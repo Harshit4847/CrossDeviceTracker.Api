@@ -63,6 +63,10 @@ namespace CrossDeviceTracker.Api.Services
 
                     _context.Devices.Add(device);
                     _context.SaveChanges();
+                    Console.WriteLine("DEBUG: Device saved successfully");
+                    Console.WriteLine($"DEBUG: DeviceId={device.Id}");
+                    Console.WriteLine($"DEBUG: UserId={device.UserId}");
+                    Console.WriteLine($"DEBUG: TokenVersion={device.TokenVersion}");
                     wasCreated = true;
                 }
             }
@@ -90,6 +94,8 @@ namespace CrossDeviceTracker.Api.Services
                 device.Id,
                 device.UserId,
                 device.TokenVersion);
+
+            Console.WriteLine("DEBUG: Device JWT generated");
 
             return new RegisterDeviceResponse
             {

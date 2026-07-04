@@ -1,21 +1,36 @@
 {
+
   "ConnectionStrings": {
+
     "DefaultConnection": "Host=localhost;Port=5432;Database=ScreenTimeTrackerDB;Username=postgres;Password=YOUR_PASSWORD_HERE"
+
   },
+
   "Logging": {
+
     "LogLevel": {
+
       "Default": "Information",
+
       "Microsoft.AspNetCore": "Warning"
+
     }
+
   },
+
   "Jwt": {
+
     "Key": "YOUR_JWT_SECRET_KEY_HERE_MIN_32_CHARS",
+
     "Issuer": "CrossDeviceTrackerAPI",
+
     "Audience": "CrossDeviceTrackerClient",
+
     "ExpiryMinutes": 60
+
   },
-  "DeviceJwt": {
-    "ExpiryDays": 365
-  },
+
   "AllowedHosts": "*"
+
 }
+
