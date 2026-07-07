@@ -7,6 +7,7 @@ namespace CrossDeviceTracker.Api.Services
     {
         Task<PaginatedTimeLogsResponse> GetTimeLogsForUser(Guid userId, int? limit, DateTime? cursor);
         Task<TimeLogResponse> CreateTimeLog(Guid userid, CreateTimeLogRequest request);
+        Task<List<TimeLogResponse>> CreateTimeLogsBatch(Guid userId, List<CreateTimeLogRequest> requests);
     }
 }
 

@@ -87,6 +87,62 @@ namespace CrossDeviceTracker.Api.Services
             return MapToTimeLogResponse(timeLog);
         }
 
+        public async Task<List<TimeLogResponse>> CreateTimeLogsBatch(Guid userId, List<CreateTimeLogRequest> requests)
+        {
+            if (requests == null || requests.Count == 0)
+            {
+                throw new ArgumentNullException(nameof(requests));
+            }
+
+            var deviceId = _currentDeviceService.DeviceId;
+
+            var device = await _context.Devices.FirstOrDefaultAsync(d => d.Id == deviceId);
+
+            if (device == null)
+            {
+                throw new ForbiddenException("Device not found.");
+            }
+
+            if (device.UserId != userId)
+            {
+                throw new ForbiddenException("Device does not belong to the current user.");
+            }
+
+            var timeLogs = new List<TimeLog>();
+
+            foreach (var request in requests)
+            {
+                if (request == null)
+                {
+                    throw new ArgumentNullException(nameof(request));
+                }
+
+                if (request.DurationSeconds <= 0)
+                {
+                    throw new ArgumentException("DurationSeconds must be greater than 0", nameof(request.DurationSeconds));
+                }
+
+                var timeLog = new TimeLog
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = userId,
+                    DeviceId = deviceId,
+                    AppName = request.AppName,
+                    StartTime = request.StartTime,
+                    EndTime = request.StartTime.AddSeconds(request.DurationSeconds),
+                    DurationSeconds = request.DurationSeconds,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                timeLogs.Add(timeLog);
+            }
+
+            _context.TimeLogs.AddRange(timeLogs);
+            await _context.SaveChangesAsync();
+
+            return timeLogs.Select(MapToTimeLogResponse).ToList();
+        }
+
         private int GetFinalLimit(int? limit)
         {
             if (!limit.HasValue)

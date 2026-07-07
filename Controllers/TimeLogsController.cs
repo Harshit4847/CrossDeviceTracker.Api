@@ -52,6 +52,24 @@ namespace CrossDeviceTracker.Api.Controllers
             return Ok(response);
         }
 
+        [HttpPost("batch")]
+        public async Task<IActionResult> CreateTimeLogsBatch([FromBody] List<CreateTimeLogRequest> requests)
+        {
+            var userId = _currentUserService.UserId;
+            if (requests == null || requests.Count == 0)
+            {
+                return BadRequest("Request body is null or empty");
+            }
+            if(userId== Guid.Empty)
+            {
+                return BadRequest("UserId is empty / invalid");
+            }
+
+            var response = await _timeLogService.CreateTimeLogsBatch(userId, requests);
+
+            return Ok(response);
+        }
+
         [Authorize]
         [HttpGet]
         public async Task<IActionResult> GetTimeLogsForUser([FromQuery] int? limit, [FromQuery] DateTime? cursor)
