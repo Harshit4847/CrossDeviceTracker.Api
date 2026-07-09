@@ -68,10 +68,13 @@ System components:
 
    * Raw token
    * `DeviceName` (auto-detected)
+   * User JWT (for authentication)
 6. Backend:
 
+   * Validates user is authenticated via User JWT
    * Hashes received token
    * Validates existence, expiry, and unused status
+   * **Validates that the link token belongs to the authenticated user**
    * Marks token as used
    * Creates new `Device` record
    * Issues Device JWT
@@ -427,23 +430,25 @@ Raw token handling:
 
 ### 11.9 Token Validation (Linking Flow)
 
-When desktop sends token:
+When desktop sends token (with User JWT for authentication):
 
 Inside a transaction:
 
-1. Decode URL-safe Base64 → bytes.
-2. Hash bytes → SHA256.
-3. Query token by `TokenHash`.
-4. Validate:
+1. Validate user is authenticated via User JWT
+2. Decode URL-safe Base64 → bytes.
+3. Hash bytes → SHA256.
+4. Query token by `TokenHash`.
+5. Validate:
 
    * Exists
    * Not expired
    * Not used
-5. Call `MarkAsUsed()`.
-6. Create `Device` entity.
-7. `SaveChanges` once.
-8. Commit transaction.
-9. Issue Device JWT.
+   * **Token belongs to authenticated user** (UserId match)
+6. Call `MarkAsUsed()`.
+7. Create `Device` entity.
+8. `SaveChanges` once.
+9. Commit transaction.
+10. Issue Device JWT.
 
 ### 11.10 Security Rules
 

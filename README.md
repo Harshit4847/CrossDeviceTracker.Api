@@ -127,13 +127,14 @@ The API will be available at the URLs displayed in the console output. Swagger U
 | GET | `/api/devices` | User JWT | List all devices for the authenticated user |
 | POST | `/api/devices` | User JWT | Register a new device (mobile — uses `InstallationId`) |
 | POST | `/api/devices/link-token` | User JWT | Generate a one-time desktop link token |
-| POST | `/api/devices/link` | No | Link a desktop app using a link token; returns a Device JWT |
+| POST | `/api/devices/link` | User JWT | Link a desktop app using a link token; returns a Device JWT (requires authentication and validates token ownership) |
 
 ### Time Logs (`/api/timelogs`)
 
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
-| POST | `/api/timelogs` | Device JWT | Create a time log entry (DeviceId extracted from JWT claims) |
+| POST | `/api/timelogs` | Device JWT | Create a single time log entry (DeviceId extracted from JWT claims) |
+| POST | `/api/timelogs/batch` | Device JWT | Create multiple time log entries in a single request |
 | GET | `/api/timelogs` | JWT | Get time logs (supports `?limit=` and `?cursor=` query params) |
 
 ## Database
