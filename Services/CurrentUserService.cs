@@ -24,7 +24,8 @@ namespace CrossDeviceTracker.Api.Services
                     throw new UnauthorizedException("User is not authenticated.");
                 }
 
-                var userIdClaim = context.User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+                var userIdClaim = context.User.FindFirst("user_id")?.Value
+                    ?? context.User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
                     ?? context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
                 if (string.IsNullOrWhiteSpace(userIdClaim))

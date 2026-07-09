@@ -33,13 +33,13 @@ namespace CrossDeviceTracker.Api.Controllers
             {
                 return BadRequest("UserId is empty / invalid");
             }
-            if(string.IsNullOrWhiteSpace(request.AppName))
+            if (string.IsNullOrWhiteSpace(request.AppName) && string.IsNullOrWhiteSpace(request.PackageName))
             {
-                return BadRequest("AppName is required");
+                return BadRequest("AppName or PackageName is required");
             }
-            if (request.StartTime > DateTime.UtcNow)
+            if (request.StartTimeUtc > DateTime.UtcNow)
             {
-                return BadRequest("StartTime cannot be in the future");
+                return BadRequest("StartTimeUtc cannot be in the future");
             }
 
             if(request.DurationSeconds <= 0)

@@ -4,6 +4,7 @@ using CrossDeviceTracker.Api.Models.DTOs;
 using CrossDeviceTracker.Api.Models.Entities;
 using Microsoft.EntityFrameworkCore;
 using CrossDeviceTracker.Api.Exceptions;
+using Microsoft.Extensions.Logging;
 
 namespace CrossDeviceTracker.Api.Services
 {
@@ -11,14 +12,16 @@ namespace CrossDeviceTracker.Api.Services
     {
         private readonly AppDbContext _context;
         private readonly ICurrentDeviceService _currentDeviceService;
+        private readonly ILogger<TimeLogService> _logger;
         private const int MaxLimit = 50;
         private const int DefaultLimit = 20;
-        
 
-        public TimeLogService(AppDbContext context, ICurrentDeviceService currentDeviceService)
+
+        public TimeLogService(AppDbContext context, ICurrentDeviceService currentDeviceService, ILogger<TimeLogService> logger)
         {
             _context = context;
             _currentDeviceService = currentDeviceService;
+            _logger = logger;
         }
 
         public async Task<PaginatedTimeLogsResponse> GetTimeLogsForUser(Guid userId, int? limit, DateTime? cursor)
@@ -74,11 +77,11 @@ namespace CrossDeviceTracker.Api.Services
                 Id = Guid.NewGuid(),
                 UserId = userid,
                 DeviceId = deviceId,
-                AppName = request.AppName,
-                StartTime = request.StartTime,
-                EndTime = request.StartTime.AddSeconds(request.DurationSeconds),
+                AppName = string.IsNullOrWhiteSpace(request.AppName) ? request.PackageName : request.AppName,
+                StartTime = request.StartTimeUtc,
+                EndTime = request.EndTimeUtc,
                 DurationSeconds = request.DurationSeconds,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = request.CreatedAtUtc
             };
 
             _context.TimeLogs.Add(timeLog);
@@ -89,9 +92,25 @@ namespace CrossDeviceTracker.Api.Services
 
         public async Task<List<TimeLogResponse>> CreateTimeLogsBatch(Guid userId, List<CreateTimeLogRequest> requests)
         {
+            throw new Exception("Batch endpoint reached");
+
             if (requests == null || requests.Count == 0)
             {
                 throw new ArgumentNullException(nameof(requests));
+            }
+
+            _logger.LogInformation("=== BATCH REQUEST START ===");
+
+            foreach (var r in requests)
+            {
+                _logger.LogInformation(
+                    "Package={Package}, App={App}, Start={Start}, End={End}, Created={Created}, Duration={Duration}",
+                    r.PackageName,
+                    r.AppName,
+                    r.StartTimeUtc,
+                    r.EndTimeUtc,
+                    r.CreatedAtUtc,
+                    r.DurationSeconds);
             }
 
             var deviceId = _currentDeviceService.DeviceId;
@@ -127,11 +146,11 @@ namespace CrossDeviceTracker.Api.Services
                     Id = Guid.NewGuid(),
                     UserId = userId,
                     DeviceId = deviceId,
-                    AppName = request.AppName,
-                    StartTime = request.StartTime,
-                    EndTime = request.StartTime.AddSeconds(request.DurationSeconds),
+                    AppName = string.IsNullOrWhiteSpace(request.AppName) ? request.PackageName : request.AppName,
+                    StartTime = request.StartTimeUtc,
+                    EndTime = request.EndTimeUtc,
                     DurationSeconds = request.DurationSeconds,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = request.CreatedAtUtc
                 };
 
                 timeLogs.Add(timeLog);
