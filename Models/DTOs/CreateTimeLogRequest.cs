@@ -4,10 +4,16 @@ namespace CrossDeviceTracker.Api.Models.DTOs
 {
     public class CreateTimeLogRequest
     {
-        public string AppName { get; set; } = string.Empty;
+        public string? PackageName { get; set; }
 
-        public DateTime StartTime { get; set; }
+        public string? AppName { get; set; }
+
+        public DateTime StartTimeUtc { get; set; }
+
+        public DateTime EndTimeUtc { get; set; }
 
         public int DurationSeconds { get; set; }
+
+        public DateTime CreatedAtUtc { get; set; }
     }
 }

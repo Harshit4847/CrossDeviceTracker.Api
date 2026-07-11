@@ -56,13 +56,15 @@ namespace CrossDeviceTracker.Api.Controllers
             return Ok(response);
         }
 
+        [Authorize]
         [HttpPost("link")]
         public async Task<IActionResult> LinkDesktopAsync([FromBody] LinkDesktopRequest request)
         {
+            var userId = _currentUserService.UserId;
 
             var command = new LinkDesktopCommand(request.LinkToken,request.DeviceName,request.Platform);
 
-            var response = await _deviceService.LinkDesktopAsync(command);
+            var response = await _deviceService.LinkDesktopAsync(userId, command);
             return Ok(response);
         }
     }

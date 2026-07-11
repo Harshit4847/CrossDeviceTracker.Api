@@ -2,6 +2,7 @@ using CrossDeviceTracker.Api.Models.DTOs;
 using CrossDeviceTracker.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System;
 using System.Collections.Generic;
 
 namespace CrossDeviceTracker.Api.Controllers
@@ -33,13 +34,24 @@ namespace CrossDeviceTracker.Api.Controllers
             {
                 return BadRequest("UserId is empty / invalid");
             }
-            if(string.IsNullOrWhiteSpace(request.AppName))
+            if (string.IsNullOrWhiteSpace(request.AppName) && string.IsNullOrWhiteSpace(request.PackageName))
             {
-                return BadRequest("AppName is required");
+                return BadRequest("AppName or PackageName is required");
             }
-            if (request.StartTime > DateTime.UtcNow)
+            if (request.StartTimeUtc > DateTime.UtcNow)
             {
-                return BadRequest("StartTime cannot be in the future");
+                return BadRequest("StartTimeUtc cannot be in the future");
+            }
+
+            if (request.EndTimeUtc <= request.StartTimeUtc)
+            {
+                return BadRequest("EndTimeUtc must be after StartTimeUtc");
+            }
+
+            var computedDuration = (request.EndTimeUtc - request.StartTimeUtc).TotalSeconds;
+            if (Math.Abs(computedDuration - request.DurationSeconds) > 1.0)
+            {
+                return BadRequest("DurationSeconds must match (EndTimeUtc - StartTimeUtc)");
             }
 
             if(request.DurationSeconds <= 0)
@@ -63,6 +75,40 @@ namespace CrossDeviceTracker.Api.Controllers
             if(userId== Guid.Empty)
             {
                 return BadRequest("UserId is empty / invalid");
+            }
+
+            foreach (var request in requests)
+            {
+                if (request == null)
+                {
+                    return BadRequest("Request contains null item");
+                }
+
+                if (string.IsNullOrWhiteSpace(request.AppName) && string.IsNullOrWhiteSpace(request.PackageName))
+                {
+                    return BadRequest("AppName or PackageName is required for all items");
+                }
+
+                if (request.StartTimeUtc > DateTime.UtcNow)
+                {
+                    return BadRequest("StartTimeUtc cannot be in the future");
+                }
+
+                if (request.EndTimeUtc <= request.StartTimeUtc)
+                {
+                    return BadRequest("EndTimeUtc must be after StartTimeUtc");
+                }
+
+                var computedDuration = (request.EndTimeUtc - request.StartTimeUtc).TotalSeconds;
+                if (Math.Abs(computedDuration - request.DurationSeconds) > 1.0)
+                {
+                    return BadRequest("DurationSeconds must match (EndTimeUtc - StartTimeUtc)");
+                }
+
+                if (request.DurationSeconds <= 0)
+                {
+                    return BadRequest("DurationSeconds must be greater than zero");
+                }
             }
 
             var response = await _timeLogService.CreateTimeLogsBatch(userId, requests);

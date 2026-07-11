@@ -13,7 +13,7 @@ namespace CrossDeviceTracker.Api.Services
         private readonly ICurrentDeviceService _currentDeviceService;
         private const int MaxLimit = 50;
         private const int DefaultLimit = 20;
-        
+
 
         public TimeLogService(AppDbContext context, ICurrentDeviceService currentDeviceService)
         {
@@ -74,11 +74,11 @@ namespace CrossDeviceTracker.Api.Services
                 Id = Guid.NewGuid(),
                 UserId = userid,
                 DeviceId = deviceId,
-                AppName = request.AppName,
-                StartTime = request.StartTime,
-                EndTime = request.StartTime.AddSeconds(request.DurationSeconds),
+                AppName = string.IsNullOrWhiteSpace(request.AppName) ? request.PackageName : request.AppName,
+                StartTime = request.StartTimeUtc,
+                EndTime = request.EndTimeUtc,
                 DurationSeconds = request.DurationSeconds,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = request.CreatedAtUtc
             };
 
             _context.TimeLogs.Add(timeLog);
@@ -127,11 +127,11 @@ namespace CrossDeviceTracker.Api.Services
                     Id = Guid.NewGuid(),
                     UserId = userId,
                     DeviceId = deviceId,
-                    AppName = request.AppName,
-                    StartTime = request.StartTime,
-                    EndTime = request.StartTime.AddSeconds(request.DurationSeconds),
+                    AppName = string.IsNullOrWhiteSpace(request.AppName) ? request.PackageName : request.AppName,
+                    StartTime = request.StartTimeUtc,
+                    EndTime = request.EndTimeUtc,
                     DurationSeconds = request.DurationSeconds,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = request.CreatedAtUtc
                 };
 
                 timeLogs.Add(timeLog);

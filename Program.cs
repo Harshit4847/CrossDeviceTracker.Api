@@ -29,13 +29,6 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IDeviceJwtService, DeviceJwtService>();
 
 //db
-var env = builder.Environment.EnvironmentName;
-Console.WriteLine($"ENVIRONMENT: {env}");
-
-var conn = builder.Configuration.GetConnectionString("DefaultConnection");
-Console.WriteLine($"CONNECTION STRING IS NULL: {conn == null}");
-Console.WriteLine($"CONNECTION STRING LENGTH: {conn?.Length}");
-Console.WriteLine($"CONNECTION STRING VALUE: {conn}");
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
 );
@@ -78,8 +71,11 @@ builder.Services.AddHttpContextAccessor();
 var app = builder.Build();
 
 // Swagger first (dev tools)
-app.UseSwagger();
-app.UseSwaggerUI();
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
 //app.UseHttpsRedirection();
 app.UseCors("AllowAll");
