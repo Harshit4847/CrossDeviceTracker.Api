@@ -4,7 +4,6 @@ using CrossDeviceTracker.Api.Models.DTOs;
 using CrossDeviceTracker.Api.Models.Entities;
 using Microsoft.EntityFrameworkCore;
 using CrossDeviceTracker.Api.Exceptions;
-using Microsoft.Extensions.Logging;
 
 namespace CrossDeviceTracker.Api.Services
 {
@@ -12,16 +11,14 @@ namespace CrossDeviceTracker.Api.Services
     {
         private readonly AppDbContext _context;
         private readonly ICurrentDeviceService _currentDeviceService;
-        private readonly ILogger<TimeLogService> _logger;
         private const int MaxLimit = 50;
         private const int DefaultLimit = 20;
 
 
-        public TimeLogService(AppDbContext context, ICurrentDeviceService currentDeviceService, ILogger<TimeLogService> logger)
+        public TimeLogService(AppDbContext context, ICurrentDeviceService currentDeviceService)
         {
             _context = context;
             _currentDeviceService = currentDeviceService;
-            _logger = logger;
         }
 
         public async Task<PaginatedTimeLogsResponse> GetTimeLogsForUser(Guid userId, int? limit, DateTime? cursor)
@@ -95,20 +92,6 @@ namespace CrossDeviceTracker.Api.Services
             if (requests == null || requests.Count == 0)
             {
                 throw new ArgumentNullException(nameof(requests));
-            }
-
-            _logger.LogInformation("=== BATCH REQUEST START ===");
-
-            foreach (var r in requests)
-            {
-                _logger.LogInformation(
-                    "Package={Package}, App={App}, Start={Start}, End={End}, Created={Created}, Duration={Duration}",
-                    r.PackageName,
-                    r.AppName,
-                    r.StartTimeUtc,
-                    r.EndTimeUtc,
-                    r.CreatedAtUtc,
-                    r.DurationSeconds);
             }
 
             var deviceId = _currentDeviceService.DeviceId;

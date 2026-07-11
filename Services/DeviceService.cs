@@ -63,10 +63,6 @@ namespace CrossDeviceTracker.Api.Services
 
                     _context.Devices.Add(device);
                     _context.SaveChanges();
-                    Console.WriteLine("DEBUG: Device saved successfully");
-                    Console.WriteLine($"DEBUG: DeviceId={device.Id}");
-                    Console.WriteLine($"DEBUG: UserId={device.UserId}");
-                    Console.WriteLine($"DEBUG: TokenVersion={device.TokenVersion}");
                     wasCreated = true;
                 }
             }
@@ -163,16 +159,6 @@ namespace CrossDeviceTracker.Api.Services
 
             // hash it (SHA256) - this is what you store in DB
             var tokenHash = SHA256.HashData(rawToken);
-
-            // optional: delete existing unused token(s) for this user to avoid unique constraint issues
-            var existingUnused = await _context.DesktopLinkTokens
-                .Where(t => t.UserId == userId && !t.IsUsed)
-                .ToListAsync();
-
-            if (existingUnused.Count > 0)
-            {
-                _context.DesktopLinkTokens.RemoveRange(existingUnused);
-            }
 
             var entity = new DesktopLinkToken(userId, tokenHash, expiresAt);
 

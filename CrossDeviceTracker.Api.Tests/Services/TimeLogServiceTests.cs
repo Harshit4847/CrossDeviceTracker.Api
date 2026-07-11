@@ -7,8 +7,6 @@ using System;
 using System.Threading.Tasks;
 using CrossDeviceTracker.Api.Models.Entities;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 
 namespace CrossDeviceTracker.Api.Tests.Services
 {
@@ -39,12 +37,10 @@ namespace CrossDeviceTracker.Api.Tests.Services
             _context = new AppDbContext(options);
 
             var currentDeviceService = new FakeCurrentDeviceService();
-            var logger = NullLogger<TimeLogService>.Instance;
 
             _service = new TimeLogService(
                 _context,
-                currentDeviceService,
-                logger
+                currentDeviceService
             );
         }
 
