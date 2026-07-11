@@ -92,8 +92,6 @@ namespace CrossDeviceTracker.Api.Services
 
         public async Task<List<TimeLogResponse>> CreateTimeLogsBatch(Guid userId, List<CreateTimeLogRequest> requests)
         {
-            throw new Exception("Batch endpoint reached");
-
             if (requests == null || requests.Count == 0)
             {
                 throw new ArgumentNullException(nameof(requests));
