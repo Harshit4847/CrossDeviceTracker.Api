@@ -194,13 +194,13 @@ namespace CrossDeviceTracker.Api.Services
         public async Task<TimelineResponse> GetTimelineAsync(Guid userId, DateTime? from = null, DateTime? to = null)
         {
             var query = _context.TimeLogs
-                .Where(t => t.UserId == userId)
-                .Include(t => t.Device);
+                .Where(t => t.UserId == userId);
 
             if (from.HasValue) query = query.Where(t => t.StartTime >= from.Value);
             if (to.HasValue) query = query.Where(t => t.StartTime <= to.Value);
 
             var logs = await query
+                .Include(t => t.Device)
                 .OrderBy(t => t.StartTime)
                 .ToListAsync();
 
