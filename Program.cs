@@ -8,6 +8,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.AspNetCore.Identity;
 using CrossDeviceTracker.Api.Exceptions;
+using Microsoft.Extensions.Caching.Memory;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -27,6 +28,10 @@ builder.Services.AddAuthorization();
 
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IDeviceJwtService, DeviceJwtService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<IAppNormalizationService, AppNormalizationService>();
+builder.Services.AddScoped<ITimeAnalyticsService, TimeAnalyticsService>();
+builder.Services.AddMemoryCache();
 
 //db
 builder.Services.AddDbContext<AppDbContext>(options =>
