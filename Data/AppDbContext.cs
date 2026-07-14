@@ -14,6 +14,7 @@ namespace CrossDeviceTracker.Api.Data
         public DbSet<TimeLog> TimeLogs { get; set; }
         public DbSet<Device> Devices { get; set; }
         public DbSet<DesktopLinkToken> DesktopLinkTokens { get; set; }
+        public DbSet<AppAlias> AppAliases { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -129,6 +130,32 @@ namespace CrossDeviceTracker.Api.Data
                       .WithMany()
                       .HasForeignKey(t => t.UserId)
                       .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // app_aliases table
+            modelBuilder.Entity<AppAlias>(entity =>
+            {
+                entity.ToTable("app_aliases");
+
+                entity.HasKey(a => a.Id);
+
+                entity.Property(a => a.CanonicalName)
+                      .IsRequired()
+                      .HasMaxLength(255);
+
+                entity.Property(a => a.Alias)
+                      .IsRequired()
+                      .HasMaxLength(255);
+
+                entity.Property(a => a.Platform)
+                      .IsRequired()
+                      .HasMaxLength(100);
+
+                entity.Property(a => a.CreatedAt);
+
+                // Alias must be unique per platform
+                entity.HasIndex(a => new { a.Alias, a.Platform })
+                      .IsUnique();
             });
         }
     }

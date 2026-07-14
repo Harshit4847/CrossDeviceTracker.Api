@@ -35,6 +35,7 @@ System components:
 * Device linking system
 * Device authentication (Device JWT)
 * Time log validation and storage
+* **Centralized aggregation and analytics** - Backend computes all dashboard stats (today, week, month, top apps, top devices) to avoid clients downloading and processing raw logs
 
 ### Desktop Application (C#)
 

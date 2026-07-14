@@ -1,11 +1,11 @@
 # Cross Device Screen Time Tracker — Project Documentation
 
 > **Author:** Harshit Yadav  
-> **Last Updated:** July 1, 2026  
-> **Version:** 1.1  
+> **Last Updated:** July 14, 2026  
+> **Version:** 1.2  
 > **Repository:** [github.com/Harshit4847/CrossDeviceTracker.Api](https://github.com/Harshit4847/CrossDeviceTracker.Api)
 
-> This document reflects the current implementation in the repository as of July 1, 2026.
+> This document reflects the current implementation in the repository as of July 14, 2026.
 
 ---
 
@@ -46,7 +46,7 @@ The system is composed of three parts:
 
 | Component | Technology | Role |
 |-----------|-----------|------|
-| **Backend API** | ASP.NET Core (.NET 10.0) | JWT auth, device linking, time log storage, validation |
+| **Backend API** | ASP.NET Core (.NET 10.0) | JWT auth, device linking, time log storage, validation, centralized analytics aggregation |
 | **Website** | (Planned) | User dashboard, analytics, device management |
 | **Desktop App** | C# (Planned) | Foreground window tracking, local SQLite storage, sync to backend |
 
@@ -176,7 +176,9 @@ CrossDeviceTracker.Api/
 ├── Controllers/                    # API endpoints (thin controllers)
 │   ├── AuthController.cs           # POST /api/auth/register, POST /api/auth/token
 │   ├── DevicesController.cs        # GET/POST /api/devices, link-token, link
-│   └── TimeLogsController.cs       # GET/POST /api/timelogs
+│   ├── TimeLogsController.cs       # GET/POST /api/timelogs
+│   ├── DashboardController.cs      # GET /api/dashboard/* endpoints
+│   └── AnalyticsController.cs      # GET /api/analytics/* endpoints
 │
 ├── Services/                       # Business logic layer
 │   ├── IAuthService.cs             # Auth interface
@@ -185,6 +187,12 @@ CrossDeviceTracker.Api/
 │   ├── DeviceService.cs            # Device CRUD, desktop link token, linking
 │   ├── ITimeLogService.cs          # TimeLog interface
 │   ├── TimeLogService.cs           # Time log creation, paginated retrieval
+│   ├── IDashboardService.cs        # Dashboard interface
+│   ├── DashboardService.cs         # Dashboard analytics with interval merging
+│   ├── ITimeAnalyticsService.cs    # Time analytics interface
+│   ├── TimeAnalyticsService.cs     # Interval merging, attention time calculation
+│   ├── IAppNormalizationService.cs # App name normalization interface
+│   ├── AppNormalizationService.cs  # App alias lookup for normalization
 │   ├── ICurrentUserService.cs      # Current user interface
 │   └── CurrentUserService.cs       # Extracts UserId from JWT claims
 │
@@ -193,7 +201,8 @@ CrossDeviceTracker.Api/
 │   │   ├── User.cs
 │   │   ├── Device.cs
 │   │   ├── TimeLog.cs
-│   │   └── DesktopLinkToken.cs     # Sealed entity with domain invariants
+│   │   ├── DesktopLinkToken.cs     # Sealed entity with domain invariants
+│   │   └── AppAlias.cs             # App name normalization entity
 │   ├── DTOs/                       # Data Transfer Objects (request/response)
 │   │   ├── RegisterRequest.cs
 │   │   ├── LoginRequest.cs
@@ -207,7 +216,16 @@ CrossDeviceTracker.Api/
 │   │   ├── GenerateDesktopLinkTokenResponse.cs
 │   │   ├── LinkDesktopRequest.cs
 │   │   ├── LinkDesktopResponse.cs
-│   │   └── PairDeviceRequest.cs    # Placeholder
+│   │   ├── PairDeviceRequest.cs    # Placeholder
+│   │   └── Dashboard/              # Dashboard-specific DTOs
+│   │       ├── DashboardSummaryResponse.cs
+│   │       ├── AppUsageResponse.cs
+│   │       ├── DeviceUsageResponse.cs
+│   │       ├── TimelineResponse.cs
+│   │       ├── DailyUsageResponse.cs
+│   │       ├── WeeklyUsageResponse.cs
+│   │       ├── MonthlyUsageResponse.cs
+│   │       └── HourlyUsageResponse.cs
 │   └── Commands/
 │       └── LinkDesktopCommand.cs   # Immutable command object for desktop linking
 │
@@ -229,7 +247,7 @@ CrossDeviceTracker.Api/
 │
 ├── CrossDeviceTracker.Api.Tests/   # Unit tests
 │   └── Services/
-│       └── TimeLogServiceTests.cs
+│       └── TimeAnalyticsServiceTests.cs
 │
 ├── Program.cs                      # Application entry point & DI configuration
 ├── appsettings.json                # Base config (empty secrets)
@@ -263,9 +281,12 @@ If the project grows significantly, consider migrating to vertical slice archite
 │ Email    │       │ UserId (FK)  │       │ UserId (FK)      │
 │ Password │───1:N─│ DeviceName   │       │ TokenHash        │
 │  Hash    │   │   │ Platform     │       │ ExpiresAt        │
-│ CreatedAt│   │   │ CreatedAt    │       │ CreatedAt        │
-└──────────┘   │   └──────────────┘       │ IsUsed           │
-               │                          └──────────────────┘
+│ CreatedAt│   │   │ InstallationId│       │ CreatedAt        │
+└──────────┘   │   │ TokenVersion │       │ IsUsed           │
+               │   │ IsRevoked    │       └──────────────────┘
+               │   │ LastDataSyncAt│
+               │   │ CreatedAt    │
+               │   └──────────────┘
                │
                │   ┌──────────────┐
                └──▶│  TimeLogs    │
@@ -277,6 +298,16 @@ If the project grows significantly, consider migrating to vertical slice archite
                    │ StartTime    │
                    │ EndTime      │
                    │ DurationSecs │
+                   │ CreatedAt    │
+                   └──────────────┘
+               │
+               │   ┌──────────────┐
+               └──▶│  AppAliases  │
+                   │              │
+                   │ Id (PK)      │
+                   │ CanonicalName│
+                   │ Alias        │
+                   │ Platform     │
                    │ CreatedAt    │
                    └──────────────┘
 ```
@@ -300,6 +331,10 @@ If the project grows significantly, consider migrating to vertical slice archite
 | `UserId` | `Guid` | FK → users, Cascade Delete | Owner of the device |
 | `DeviceName` | `string(255)` | Required | Auto-detected or user-provided |
 | `Platform` | `string(100)` | Required | e.g., "Windows", "Android", "macOS" |
+| `InstallationId` | `string(255)` | — | Unique identifier for device installation |
+| `TokenVersion` | `int` | — | Version counter for device JWT revocation |
+| `IsRevoked` | `bool` | — | Whether device access is revoked |
+| `LastDataSyncAt` | `DateTime` | — | Timestamp of last data sync |
 | `CreatedAt` | `DateTime` | — | UTC timestamp |
 
 #### `time_logs`
@@ -314,6 +349,18 @@ If the project grows significantly, consider migrating to vertical slice archite
 | `EndTime` | `DateTime` | Required | UTC end of usage block |
 | `DurationSeconds` | `int` | Required | Server-computed: EndTime - StartTime |
 | `CreatedAt` | `DateTime` | — | When the record was created on server |
+
+#### `app_aliases`
+
+| Column | Type | Constraints | Notes |
+|--------|------|------------|-------|
+| `Id` | `Guid` | PK | Generated by application |
+| `CanonicalName` | `string(255)` | Required | Standardized app name |
+| `Alias` | `string(255)` | Required | Alternative app name to normalize |
+| `Platform` | `string(100)` | Required | Platform for the alias |
+| `CreatedAt` | `DateTime` | — | UTC timestamp |
+
+**Special Index:** `UNIQUE(alias, platform)` — Ensures each alias is unique per platform.
 
 #### `desktop_link_tokens`
 
@@ -359,7 +406,7 @@ public class User
 
 ### 8.2 Device Entity
 
-Simple anemic entity.
+Anemic entity with device management fields.
 
 ```csharp
 public class Device
@@ -368,11 +415,19 @@ public class Device
     public Guid UserId { get; set; }
     public string DeviceName { get; set; }
     public string Platform { get; set; }
+    public string InstallationId { get; set; }
+    public int TokenVersion { get; set; }
+    public bool IsRevoked { get; set; }
+    public DateTime? LastDataSyncAt { get; set; }
     public DateTime CreatedAt { get; set; }
 }
 ```
 
-**Note:** The `Device` entity in the current implementation does not yet have `IsRevoked`, `TokenVersion`, or `LastDataSyncAt` fields described in the DESIGN.md. These are planned for future implementation (see [Section 22](#22-known-issues--incomplete-work)).
+**Fields:**
+- `InstallationId` - Unique identifier for device installation
+- `TokenVersion` - Version counter for device JWT revocation
+- `IsRevoked` - Whether device access is revoked
+- `LastDataSyncAt` - Timestamp of last data sync
 
 ### 8.3 TimeLog Entity
 
@@ -392,7 +447,24 @@ public class TimeLog
 }
 ```
 
-### 8.4 DesktopLinkToken Entity (Rich Domain Entity)
+### 8.4 AppAlias Entity
+
+Simple anemic entity for app name normalization.
+
+```csharp
+public class AppAlias
+{
+    public Guid Id { get; set; }
+    public string CanonicalName { get; set; }
+    public string Alias { get; set; }
+    public string Platform { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+```
+
+**Purpose:** Maps alternative app names to canonical names for normalization across platforms.
+
+### 8.5 DesktopLinkToken Entity (Rich Domain Entity)
 
 This is the **only entity with domain-driven design principles** applied. It is `sealed`, has constructor invariants, and enforces controlled state transitions.
 
@@ -808,6 +880,259 @@ Uses **cursor-based pagination** (see [Section 16](#16-pagination-strategy)).
 
 ---
 
+### 11.4 Dashboard Endpoints
+
+#### `GET /api/dashboard/summary`
+
+**Auth:** Bearer token (User JWT)  
+**Query Parameters:**
+- `from` (optional, DateTime) - Start date filter
+- `to` (optional, DateTime) - End date filter
+
+**Response (200 OK):**
+```json
+{
+  "today": {
+    "totalScreenTimeSeconds": 19872,
+    "totalDeviceUsageSeconds": 24120,
+    "overlapTimeSeconds": 4248,
+    "sessionCount": 45
+  },
+  "yesterday": {
+    "totalScreenTimeSeconds": 21500,
+    "sessionCount": 52
+  },
+  "thisWeek": {
+    "totalScreenTimeSeconds": 145000,
+    "sessionCount": 320
+  },
+  "thisMonth": {
+    "totalScreenTimeSeconds": 580000,
+    "sessionCount": 1280
+  },
+  "deviceCount": 3,
+  "appCount": 45,
+  "mostUsedApp": {
+    "appName": "YouTube",
+    "durationSeconds": 7200
+  }
+}
+```
+
+**Key Features:**
+- Uses interval merging algorithm to calculate accurate cross-device screen time
+- `totalScreenTimeSeconds` - Merged duration (actual attention time)
+- `totalDeviceUsageSeconds` - Raw sum of all device durations
+- `overlapTimeSeconds` - Time saved from double counting (raw - merged)
+
+---
+
+#### `GET /api/dashboard/apps`
+
+**Auth:** Bearer token (User JWT)  
+**Query Parameters:**
+- `from` (optional, DateTime) - Start date filter
+- `to` (optional, DateTime) - End date filter
+- `deviceId` (optional, Guid) - Filter by specific device
+- `platform` (optional, string) - Filter by platform
+
+**Response (200 OK):**
+```json
+[
+  {
+    "appName": "YouTube",
+    "durationSeconds": 7200,
+    "percentage": 36.2,
+    "sessionCount": 25
+  },
+  {
+    "appName": "Chrome",
+    "durationSeconds": 5400,
+    "percentage": 27.1,
+    "sessionCount": 18
+  }
+]
+```
+
+**Note:** Uses raw duration (not merged) to show per-app time accurately.
+
+---
+
+#### `GET /api/dashboard/devices`
+
+**Auth:** Bearer token (User JWT)  
+**Query Parameters:**
+- `from` (optional, DateTime) - Start date filter
+- `to` (optional, DateTime) - End date filter
+
+**Response (200 OK):**
+```json
+[
+  {
+    "deviceName": "My Desktop",
+    "platform": "Windows",
+    "durationSeconds": 12000,
+    "percentage": 60.3,
+    "sessionCount": 35
+  },
+  {
+    "deviceName": "Pixel 8",
+    "platform": "Android",
+    "durationSeconds": 7876,
+    "percentage": 39.7,
+    "sessionCount": 28
+  }
+]
+```
+
+**Note:** Uses raw duration (not merged) to show per-device time accurately.
+
+---
+
+#### `GET /api/dashboard/timeline`
+
+**Auth:** Bearer token (User JWT)  
+**Query Parameters:**
+- `from` (optional, DateTime) - Start date filter
+- `to` (optional, DateTime) - End date filter
+
+**Response (200 OK):**
+```json
+{
+  "entries": [
+    {
+      "start": "2026-03-03T08:00:00Z",
+      "end": "2026-03-03T09:00:00Z",
+      "app": "YouTube",
+      "device": "My Desktop",
+      "platform": "Windows",
+      "durationSeconds": 3600
+    }
+  ]
+}
+```
+
+---
+
+### 11.5 Analytics Endpoints
+
+#### `GET /api/analytics/daily`
+
+**Auth:** Bearer token (User JWT)  
+**Query Parameters:**
+- `from` (optional, DateTime) - Start date filter
+- `to` (optional, DateTime) - End date filter
+
+**Response (200 OK):**
+```json
+{
+  "days": [
+    {
+      "date": "2026-03-03T00:00:00Z",
+      "durationSeconds": 19872,
+      "sessionCount": 45
+    }
+  ]
+}
+```
+
+---
+
+#### `GET /api/analytics/weekly`
+
+**Auth:** Bearer token (User JWT)  
+**Query Parameters:**
+- `from` (optional, DateTime) - Start date filter
+- `to` (optional, DateTime) - End date filter
+
+**Response (200 OK):**
+```json
+{
+  "weeks": [
+    {
+      "weekStart": "2026-02-28T00:00:00Z",
+      "weekEnd": "2026-03-06T23:59:59Z",
+      "durationSeconds": 145000,
+      "sessionCount": 320
+    }
+  ]
+}
+```
+
+---
+
+#### `GET /api/analytics/monthly`
+
+**Auth:** Bearer token (User JWT)  
+**Query Parameters:**
+- `from` (optional, DateTime) - Start date filter
+- `to` (optional, DateTime) - End date filter
+
+**Response (200 OK):**
+```json
+{
+  "months": [
+    {
+      "year": 2026,
+      "month": 3,
+      "durationSeconds": 580000,
+      "sessionCount": 1280
+    }
+  ]
+}
+```
+
+---
+
+#### `GET /api/analytics/hourly`
+
+**Auth:** Bearer token (User JWT)  
+**Query Parameters:**
+- `from` (optional, DateTime) - Start date filter
+- `to` (optional, DateTime) - End date filter
+
+**Response (200 OK):**
+```json
+{
+  "hours": [
+    {
+      "hour": 9,
+      "durationSeconds": 7200,
+      "sessionCount": 12
+    }
+  ]
+}
+```
+
+---
+
+### 11.6 Dashboard Design Decisions
+
+**Backend Aggregation:** All dashboard and analytics endpoints provide pre-aggregated data computed on the backend using interval merging. This architecture:
+- Reduces data transfer (clients get aggregated stats instead of raw logs)
+- Improves performance (backend does the heavy aggregation once)
+- Ensures consistency (single source of truth for calculations)
+- Scales better with large datasets (no need to download millions of log entries)
+
+**Interval Merging Algorithm:** 
+- Merges overlapping time intervals from multiple devices to calculate accurate cross-device screen time
+- Example: Desktop 10:00-11:00 + Android 10:30-11:30 = Merged 10:00-11:30 (90 min, not 120 min)
+- Handles triple overlaps and complex scenarios correctly
+
+**Raw vs Merged Data:**
+- Dashboard Summary: Uses merged intervals for total screen time
+- App Usage: Uses raw duration for per-app accuracy
+- Device Usage: Uses raw duration for per-device accuracy
+- Analytics: Uses merged intervals for time period accuracy
+
+**When to use raw TimeLogs API:**
+- Displaying detailed timeline views
+- Exporting data for analysis
+- Searching/filtering specific sessions
+- Debugging individual sessions
+
+---
+
 ## 12. Service Layer Design
 
 ### 12.1 Design Philosophy
@@ -823,8 +1148,12 @@ Uses **cursor-based pagination** (see [Section 16](#16-pagination-strategy)).
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IDeviceService, DeviceService>();
 builder.Services.AddScoped<ITimeLogService, TimeLogService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<ITimeAnalyticsService, TimeAnalyticsService>();
+builder.Services.AddScoped<IAppNormalizationService, AppNormalizationService>();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
+builder.Services.AddMemoryCache();
 ```
 
 ### 12.3 AuthService
@@ -850,12 +1179,69 @@ builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 
 | Method | Behavior |
 |--------|----------|
-| `CreateTimeLog(userId, request)` | Validates device ownership → computes EndTime → saves → returns `TimeLogResponse` |
+| `CreateTimeLog(userId, request)` | Validates device ownership → saves → returns `TimeLogResponse` |
+| `CreateTimeLogsBatch(userId, requests)` | Validates each request → saves all in single transaction → returns `List<TimeLogResponse>` |
 | `GetTimeLogsForUser(userId, limit, cursor)` | Cursor-based paginated query → returns `PaginatedTimeLogsResponse` |
 
 **Design Decision:** `TimeLogService` uses two constants for pagination:
 - `DefaultLimit = 20` — When no limit is specified
 - `MaxLimit = 50` — Hard cap to prevent abuse
+
+### 12.6 DashboardService
+
+| Method | Behavior |
+|--------|----------|
+| `GetSummaryAsync(userId, from, to)` | Aggregates time logs with interval merging → computes today, yesterday, week, month stats with overlap metrics → returns `DashboardSummaryResponse` |
+| `GetAppUsageAsync(userId, from, to, deviceId, platform)` | Groups logs by app name → calculates per-app usage with raw duration (not merged) → returns `List<AppUsageResponse>` |
+| `GetDeviceUsageAsync(userId, from, to)` | Groups logs by device → calculates per-device usage with raw duration (not merged) → returns `List<DeviceUsageResponse>` |
+| `GetTimelineAsync(userId, from, to)` | Returns chronological list of sessions with app, device, platform info → returns `TimelineResponse` |
+| `GetDailyUsageAsync(userId, from, to)` | Groups logs by date → applies interval merging per day → returns `DailyUsageResponse` |
+| `GetWeeklyUsageAsync(userId, from, to)` | Groups logs by week → applies interval merging per week → returns `WeeklyUsageResponse` |
+| `GetMonthlyUsageAsync(userId, from, to)` | Groups logs by month → applies interval merging per month → returns `MonthlyUsageResponse` |
+| `GetHourlyUsageAsync(userId, from, to)` | Groups logs by hour (0-23) → applies interval merging per hour → returns `HourlyUsageResponse` |
+
+**Design Decision:** `DashboardService` uses `ITimeAnalyticsService` for interval merging calculations. The service:
+- Calculates time-based aggregates with interval merging for accurate cross-device screen time
+- Uses raw duration for per-app and per-device breakdowns (to show actual time spent on each)
+- Applies interval merging for time period analytics (daily/weekly/monthly/hourly)
+- Includes overlap metrics in summary (totalDeviceUsage, overlapTime)
+- Uses MemoryCache for performance (10-second cache on summary endpoint)
+
+### 12.7 TimeAnalyticsService
+
+A dedicated analytics engine for time interval calculations. Designed to be reusable across services and extensible for future analytics features.
+
+| Method | Behavior |
+|--------|----------|
+| `MergeIntervals(intervals)` | Sorts intervals by start time → merges overlapping intervals → returns merged non-overlapping intervals |
+| `CalculateAttentionTime(intervals)` | Merges intervals → sums merged durations → returns total attention time in seconds |
+
+**Algorithm:**
+1. Sort intervals by start time
+2. Iterate through sorted intervals
+3. If next interval overlaps with current (next.Start <= current.End), merge by extending current.End
+4. If no overlap, add current to result and start new current
+5. Add final current to result
+
+**Example:**
+- Input: [10:00-11:00, 10:30-11:30, 10:20-10:40]
+- Output: [10:00-11:30] (90 min, not 110 min)
+
+**Future Expansion:**
+- `CalculateOverlapTime()` - Calculate total overlap duration
+- `CalculatePeakConcurrentDevices()` - Find maximum concurrent device usage
+- `SplitByHour()` - Split intervals by hour buckets
+- `SplitByDay()` - Split intervals by day buckets
+- `SplitByWeek()` - Split intervals by week buckets
+- `SplitByMonth()` - Split intervals by month buckets
+
+### 12.8 AppNormalizationService
+
+| Method | Behavior |
+|--------|----------|
+| `NormalizeAppNameAsync(appName, platform)` | Looks up app name in AppAliases table by (Alias, Platform) → returns CanonicalName if found, otherwise returns original appName |
+
+**Purpose:** Normalizes app names across platforms for consistent analytics. For example, "com.android.chrome" and "Google Chrome" can both map to "Chrome".
 
 ---
 
@@ -1119,12 +1505,18 @@ The current `Program.cs` logs the environment name and connection string details
 
 ### 19.1 Current Test Coverage
 
-The project has a test project at `CrossDeviceTracker.Api.Tests/` with initial unit tests for `TimeLogService`:
+The project has a test project at `CrossDeviceTracker.Api.Tests/` with unit tests for `TimeAnalyticsService`:
 
 | Test | Validates |
 |------|----------|
-| `GetTimeLogsForUser_ShouldReturnEmptyList` | Empty result for new user |
-| `GetTimeLogsForUser_ShouldReturnListOfTimeLogResponse` | Correct return type (`PaginatedTimeLogsResponse`) |
+| `MergeIntervals_TripleOverlap_ShouldMergeCorrectly` | 3 devices overlapping correctly merge to single interval |
+| `MergeIntervals_DoubleOverlap_ShouldMergeCorrectly` | 2 devices overlapping correctly merge |
+| `MergeIntervals_NonOverlapping_ShouldNotMerge` | Non-overlapping intervals remain separate |
+| `MergeIntervals_EmptyList_ShouldReturnEmpty` | Empty list handling |
+| `MergeIntervals_SingleInterval_ShouldReturnSame` | Single interval identity |
+| `MergeIntervals_PartialOverlap_ShouldMergeCorrectly` | Partial overlap merging |
+| `MergeIntervals_MultipleOverlaps_ShouldMergeAll` | Chain of overlapping intervals |
+| `CalculateAttentionTime_TripleOverlap_ShouldReturnCorrectDuration` | Attention time calculation with merging |
 
 ### 19.2 Test Infrastructure
 
@@ -1139,6 +1531,8 @@ The project has a test project at `CrossDeviceTracker.Api.Tests/` with initial u
 | `AuthService` | Register (success, duplicate email), Login (success, wrong password, non-existent user) |
 | `DeviceService` | CreateDevice, GetDevicesForUser, GenerateDesktopLinkToken |
 | `TimeLogService` | CreateTimeLog (success, invalid device, future start time), pagination edge cases |
+| `DashboardService` | All dashboard endpoints with various date filters |
+| `AppNormalizationService` | App name lookup, fallback to original |
 | `CurrentUserService` | Missing claims, invalid GUID, unauthenticated user |
 | `DesktopLinkToken` | Constructor invariants, MarkAsUsed(), double-use prevention |
 | **Integration tests** | Full HTTP pipeline tests with `WebApplicationFactory` |
@@ -1177,6 +1571,7 @@ dotnet ef database update PreviousMigrationName
 1. `20260104061907_InitialCreate` — Initial tables (Devices, TimeLogs)
 2. `20260105121728_AddUsersTable` — Users table with auth support
 3. `20260227080159_AddDesktopLinkTokens` — Desktop link tokens with partial unique index
+4. `20260714000000_AddAppAliases` — App aliases table for app name normalization
 
 ---
 
@@ -1192,13 +1587,21 @@ dotnet ef database update PreviousMigrationName
 | Desktop link token consumption | Done | Validates token, creates device, returns Device JWT |
 | Time log creation | Done | Server-computed EndTime, device ownership validation |
 | Time log retrieval (paginated) | Done | Cursor-based pagination |
+| Batch time log sync | Done | POST /api/timelogs/batch endpoint |
 | Device JWT issuance | Done | Implemented in the desktop link flow |
-| Device revocation | **Not started** | No device-revocation or token-version support yet |
-| Batch time log sync | **Not started** | Single log creation only |
+| Device fields (InstallationId, TokenVersion, IsRevoked, LastDataSyncAt) | Done | Added to Device entity |
+| App aliases table | Done | AppAlias entity for app name normalization |
+| Dashboard endpoints | Done | Summary, apps, devices, timeline with date filters |
+| Analytics endpoints | Done | Daily, weekly, monthly, hourly analytics |
+| Interval merging algorithm | Done | TimeAnalyticsService with MergeIntervals and CalculateAttentionTime |
+| Overlap metrics | Done | totalDeviceUsage and overlapTime in summary |
+| App normalization service | Done | AppNormalizationService for alias lookup |
+| Memory caching | Done | 10-second cache on dashboard summary |
+| Device revocation logic | **Not started** | No device-revocation endpoint yet |
 | Exception handling middleware | Done | 401, 403, 500 mapping |
 | CORS | Done (dev mode) | AllowAll — needs restriction for production |
 | Swagger documentation | Done | Available in all environments |
-| Unit tests | Partial | TimeLogService coverage exists; broader service/controller tests are still missing |
+| Unit tests | Partial | TimeAnalyticsService coverage exists; broader service/controller tests are still missing |
 
 ---
 
@@ -1206,32 +1609,34 @@ dotnet ef database update PreviousMigrationName
 
 ### 22.1 Current Gaps
 
-1. **Mobile-specific registration is not fully implemented:**
-   - The current API supports basic device creation through `POST /api/devices`, but there is no `InstallationId`-based deduplication flow yet.
+1. **Device revocation endpoint is not implemented:**
+   - Device entity has `IsRevoked` and `TokenVersion` fields, but there is no revoke/logout flow or dedicated device-status endpoint.
 
-2. **Device revocation is not implemented:**
-   - There is no revoke/logout flow, no token-version tracking, and no dedicated device-status endpoint.
-
-3. **Connection string logging remains in startup code:**
+2. **Connection string logging remains in startup code:**
    - `Program.cs` still prints the configured connection string value, which is a security concern for production.
 
-4. **CORS is permissive in development:**
+3. **CORS is permissive in development:**
    - The current `AllowAll` policy is fine for local testing, but should be restricted for production deployments.
+
+4. **App normalization not yet integrated:**
+   - `AppNormalizationService` exists but is not yet used in dashboard analytics endpoints.
 
 ### 22.2 Missing Features vs DESIGN.md
 
 | Designed Feature | Gap |
 |-----------------|-----|
-| `Device.IsRevoked` field | Not in entity |
-| `Device.TokenVersion` field | Not in entity |
-| `Device.LastDataSyncAt` field | Not in entity |
+| `Device.IsRevoked` field | **Done** - Added to entity |
+| `Device.TokenVersion` field | **Done** - Added to entity |
+| `Device.LastDataSyncAt` field | **Done** - Added to entity |
 | Device JWT validation middleware | Not implemented; claim validation currently lives in services |
-| Token revocation (increment TokenVersion) | Not implemented |
+| Token revocation (increment TokenVersion) | Not implemented (endpoint missing) |
 | Constant-time hash comparison for tokens | Not implemented (current code uses a direct EF query by hash) |
-| Batch time log submission | Not implemented (single log only) |
+| Batch time log submission | **Done** - POST /api/timelogs/batch endpoint implemented |
 | Duration tolerance validation | Not implemented |
 | Time drift validation | Not implemented |
 | Extreme duration check | Not implemented |
+| Dashboard analytics with interval merging | **Done** - TimeAnalyticsService implemented |
+| App name normalization | **Done** - AppNormalizationService and AppAlias entity implemented |
 
 ### 22.3 Naming Inconsistencies
 
@@ -1243,10 +1648,10 @@ dotnet ef database update PreviousMigrationName
 ## 23. Future Roadmap
 
 ### Phase 1: Complete Desktop Linking
-- [ ] Implement `LinkDesktopAsync` in `DeviceService`
-- [ ] Add `IsRevoked`, `TokenVersion`, `LastDataSyncAt` to `Device` entity
-- [ ] Create EF Core migration for new Device fields
-- [ ] Issue Device JWT on successful desktop link
+- [x] Implement `LinkDesktopAsync` in `DeviceService`
+- [x] Add `IsRevoked`, `TokenVersion`, `LastDataSyncAt` to `Device` entity
+- [x] Create EF Core migration for new Device fields
+- [x] Issue Device JWT on successful desktop link
 - [ ] Add constant-time hash comparison for token validation
 
 ### Phase 2: Device Authentication & Revocation
@@ -1256,7 +1661,7 @@ dotnet ef database update PreviousMigrationName
 - [ ] Add device status check endpoint (for desktop app startup)
 
 ### Phase 3: Batch Sync
-- [ ] Add batch time log creation endpoint (`POST /api/timelogs/batch`)
+- [x] Add batch time log creation endpoint (`POST /api/timelogs/batch`)
 - [ ] Implement server-side duration recalculation and tolerance check
 - [ ] Add `LastDataSyncAt` update on successful sync
 - [ ] Implement extreme duration validation
@@ -1313,6 +1718,9 @@ A chronological record of key design decisions and their rationale.
 | 13 | — | Custom exception middleware instead of built-in ProblemDetails | UseExceptionHandler, ProblemDetails | Custom middleware gives fine-grained control over error response format; simpler to understand |
 | 14 | — | Mixed result-objects (AuthResult) and exceptions (ForbiddenException) | All exceptions, all result objects | Auth failures are expected business outcomes (result objects); ownership violations are exceptional (exceptions). Pragmatic hybrid. |
 | 15 | — | No repository pattern (services use DbContext directly) | Repository + UoW pattern | EF Core DbContext IS already a repository + unit of work. Adding another layer would be pure abstraction without benefit at this scale. |
+| 16 | Jul 14, 2026 | Interval merging for cross-device screen time | Sum raw durations, client-side merging | Merging overlapping intervals on backend provides accurate cross-device attention time without double-counting; dedicated TimeAnalyticsService for reusability |
+| 17 | Jul 14, 2026 | Separate TimeAnalyticsService from DashboardService | Keep merge logic in DashboardService | Dedicated service allows reuse across multiple services, easier unit testing, and future expansion (overlap calculation, peak concurrent devices, time splitting) |
+| 18 | Jul 14, 2026 | Raw duration for per-app/per-device, merged for total | Use merged for all calculations | Per-app and per-device breakdowns should show actual time spent (raw), while total screen time should account for overlaps (merged) - different metrics for different use cases |
 
 ---
 

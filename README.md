@@ -137,14 +137,50 @@ The API will be available at the URLs displayed in the console output. Swagger U
 | POST | `/api/timelogs/batch` | Device JWT | Create multiple time log entries in a single request |
 | GET | `/api/timelogs` | JWT | Get time logs (supports `?limit=` and `?cursor=` query params) |
 
+### Dashboard (`/api/dashboard`)
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/dashboard/summary` | User JWT | Get summary stats (today, yesterday, week, month, device count, app count, most used app) |
+| GET | `/api/dashboard/apps` | User JWT | Get app usage breakdown with optional filters (from, to, deviceId, platform) |
+| GET | `/api/dashboard/devices` | User JWT | Get device usage breakdown with optional date filters |
+| GET | `/api/dashboard/timeline` | User JWT | Get chronological timeline of sessions with optional date filters |
+
+### Analytics (`/api/analytics`)
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/analytics/daily` | User JWT | Get daily usage chart data with optional date filters |
+| GET | `/api/analytics/weekly` | User JWT | Get weekly usage chart data with optional date filters |
+| GET | `/api/analytics/monthly` | User JWT | Get monthly usage chart data with optional date filters |
+| GET | `/api/analytics/hourly` | User JWT | Get hourly distribution chart data with optional date filters |
+
+The dashboard and analytics endpoints provide pre-aggregated analytics data computed on the backend. This is the recommended approach for displaying stats on clients (Android/Website) rather than downloading raw logs and calculating locally.
+
+**All endpoints support optional date filters:**
+- `from` - Start date (UTC)
+- `to` - End date (UTC)
+
+**Additional filters for `/api/dashboard/apps`:**
+- `deviceId` - Filter by specific device
+- `platform` - Filter by platform (Windows, Android, etc.)
+
+**Response examples:**
+- Summary: Today/yesterday/week/month totals, device count, app count, most used app
+- Apps: List of apps with duration, percentage, session count
+- Devices: List of devices with duration, percentage, session count
+- Timeline: Chronological list of sessions with app, device, platform
+- Analytics: Chart-ready data for daily/weekly/monthly/hourly visualizations
+
 ## Database
 
-The project uses Entity Framework Core with PostgreSQL. Four main entities:
+The project uses Entity Framework Core with PostgreSQL. Five main entities:
 
 - **User** — `Id`, `Email`, `PasswordHash`, `CreatedAt`
-- **Device** — `Id`, `UserId`, `DeviceName`, `Platform`, `CreatedAt`
+- **Device** — `Id`, `UserId`, `DeviceName`, `Platform`, `InstallationId`, `TokenVersion`, `IsRevoked`, `LastDataSyncAt`, `CreatedAt`
 - **TimeLog** — `Id`, `UserId`, `DeviceId`, `AppName`, `StartTime`, `EndTime`, `DurationSeconds`, `CreatedAt`
 - **DesktopLinkToken** — `Id`, `UserId`, `TokenHash` (SHA-256), `ExpiresAt`, `IsUsed`, `CreatedAt`
+- **AppAlias** — `Id`, `CanonicalName`, `Alias`, `Platform`, `CreatedAt` (for app name normalization)
 
 ### Authentication Model
 
