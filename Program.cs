@@ -75,12 +75,9 @@ builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();
 
-// Swagger first (dev tools)
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// Swagger
+app.UseSwagger();
+app.UseSwaggerUI();
 
 //app.UseHttpsRedirection();
 app.UseCors("AllowAll");
