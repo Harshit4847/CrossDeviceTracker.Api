@@ -178,7 +178,7 @@ namespace CrossDeviceTracker.Api.Services
             };
         }
 
-        public async Task<LinkDesktopResponse> LinkDesktopAsync(Guid authenticatedUserId, LinkDesktopCommand command)
+        public async Task<LinkDesktopResponse> LinkDesktopAsync(LinkDesktopCommand command)
         {
             var token = command.LinkToken;
             //restroring peding
@@ -233,11 +233,6 @@ namespace CrossDeviceTracker.Api.Services
             if (tokendb.ExpiresAt < DateTimeOffset.UtcNow)
             {
                 throw new UnauthorizedException("Invalid linking token");
-            }
-
-            if (tokendb.UserId != authenticatedUserId)
-            {
-                throw new UnauthorizedException("Link token does not belong to the current user.");
             }
 
             var device = new Device

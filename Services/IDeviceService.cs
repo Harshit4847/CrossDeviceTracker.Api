@@ -11,6 +11,6 @@ namespace CrossDeviceTracker.Api.Services
 
         //for desktop
         Task<GenerateDesktopLinkTokenResponse> GenerateDesktopLinkTokenAsync(Guid userId);
-        Task<LinkDesktopResponse> LinkDesktopAsync(Guid authenticatedUserId, LinkDesktopCommand command);
+        Task<LinkDesktopResponse> LinkDesktopAsync(LinkDesktopCommand command);
     }
 }
