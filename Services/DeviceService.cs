@@ -150,7 +150,16 @@ namespace CrossDeviceTracker.Api.Services
 
         public async Task<GenerateDesktopLinkTokenResponse> GenerateDesktopLinkTokenAsync(Guid userId)
         {
-            // HERE is where you put those lines:
+            // Invalidate existing unused token before creating new one
+            var existingToken = await _context.DesktopLinkTokens
+                .Where(t => t.UserId == userId && !t.IsUsed)
+                .FirstOrDefaultAsync();
+
+            if (existingToken != null)
+            {
+                existingToken.MarkAsUsed();
+            }
+
             var expiryMinutes = _configuration.GetValue<int>("DesktopLinkToken:ExpiryMinutes", 10);
             var expiresAt = DateTimeOffset.UtcNow.AddMinutes(expiryMinutes);
 
