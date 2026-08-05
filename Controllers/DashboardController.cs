@@ -22,6 +22,14 @@ namespace CrossDeviceTracker.Api.Controllers
         [HttpGet("summary")]
         public async Task<IActionResult> GetSummary([FromQuery] DateTime? from = null, [FromQuery] DateTime? to = null)
         {
+            from = from.HasValue
+                ? DateTime.SpecifyKind(from.Value, DateTimeKind.Utc)
+                : null;
+
+            to = to.HasValue
+                ? DateTime.SpecifyKind(to.Value, DateTimeKind.Utc)
+                : null;
+
             var userId = _currentUserService.UserId;
 
             if (userId == Guid.Empty)
@@ -37,6 +45,14 @@ namespace CrossDeviceTracker.Api.Controllers
         [HttpGet("apps")]
         public async Task<IActionResult> GetAppUsage([FromQuery] DateTime? from = null, [FromQuery] DateTime? to = null, [FromQuery] Guid? deviceId = null, [FromQuery] string? platform = null)
         {
+            from = from.HasValue
+                ? DateTime.SpecifyKind(from.Value, DateTimeKind.Utc)
+                : null;
+
+            to = to.HasValue
+                ? DateTime.SpecifyKind(to.Value, DateTimeKind.Utc)
+                : null;
+
             var userId = _currentUserService.UserId;
 
             if (userId == Guid.Empty)
@@ -52,6 +68,14 @@ namespace CrossDeviceTracker.Api.Controllers
         [HttpGet("devices")]
         public async Task<IActionResult> GetDeviceUsage([FromQuery] DateTime? from = null, [FromQuery] DateTime? to = null)
         {
+            from = from.HasValue
+                ? DateTime.SpecifyKind(from.Value, DateTimeKind.Utc)
+                : null;
+
+            to = to.HasValue
+                ? DateTime.SpecifyKind(to.Value, DateTimeKind.Utc)
+                : null;
+
             var userId = _currentUserService.UserId;
 
             if (userId == Guid.Empty)
@@ -67,6 +91,14 @@ namespace CrossDeviceTracker.Api.Controllers
         [HttpGet("timeline")]
         public async Task<IActionResult> GetTimeline([FromQuery] DateTime? from = null, [FromQuery] DateTime? to = null)
         {
+            from = from.HasValue
+                ? DateTime.SpecifyKind(from.Value, DateTimeKind.Utc)
+                : null;
+
+            to = to.HasValue
+                ? DateTime.SpecifyKind(to.Value, DateTimeKind.Utc)
+                : null;
+
             var userId = _currentUserService.UserId;
 
             if (userId == Guid.Empty)
@@ -97,6 +129,14 @@ namespace CrossDeviceTracker.Api.Controllers
         [HttpGet("daily")]
         public async Task<IActionResult> GetDailyUsage([FromQuery] DateTime? from = null, [FromQuery] DateTime? to = null)
         {
+            from = from.HasValue
+                ? DateTime.SpecifyKind(from.Value, DateTimeKind.Utc)
+                : null;
+
+            to = to.HasValue
+                ? DateTime.SpecifyKind(to.Value, DateTimeKind.Utc)
+                : null;
+
             var userId = _currentUserService.UserId;
 
             if (userId == Guid.Empty)
@@ -112,6 +152,14 @@ namespace CrossDeviceTracker.Api.Controllers
         [HttpGet("weekly")]
         public async Task<IActionResult> GetWeeklyUsage([FromQuery] DateTime? from = null, [FromQuery] DateTime? to = null)
         {
+            from = from.HasValue
+                ? DateTime.SpecifyKind(from.Value, DateTimeKind.Utc)
+                : null;
+
+            to = to.HasValue
+                ? DateTime.SpecifyKind(to.Value, DateTimeKind.Utc)
+                : null;
+
             var userId = _currentUserService.UserId;
 
             if (userId == Guid.Empty)
@@ -127,6 +175,14 @@ namespace CrossDeviceTracker.Api.Controllers
         [HttpGet("monthly")]
         public async Task<IActionResult> GetMonthlyUsage([FromQuery] DateTime? from = null, [FromQuery] DateTime? to = null)
         {
+            from = from.HasValue
+                ? DateTime.SpecifyKind(from.Value, DateTimeKind.Utc)
+                : null;
+
+            to = to.HasValue
+                ? DateTime.SpecifyKind(to.Value, DateTimeKind.Utc)
+                : null;
+
             var userId = _currentUserService.UserId;
 
             if (userId == Guid.Empty)
@@ -142,6 +198,14 @@ namespace CrossDeviceTracker.Api.Controllers
         [HttpGet("hourly")]
         public async Task<IActionResult> GetHourlyUsage([FromQuery] DateTime? from = null, [FromQuery] DateTime? to = null)
         {
+            from = from.HasValue
+                ? DateTime.SpecifyKind(from.Value, DateTimeKind.Utc)
+                : null;
+
+            to = to.HasValue
+                ? DateTime.SpecifyKind(to.Value, DateTimeKind.Utc)
+                : null;
+
             var userId = _currentUserService.UserId;
 
             if (userId == Guid.Empty)

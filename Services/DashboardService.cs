@@ -33,12 +33,19 @@ namespace CrossDeviceTracker.Api.Services
             var weekStart = today.AddDays(-(int)now.DayOfWeek);
             var monthStart = new DateTime(now.Year, now.Month, 1);
 
+            Console.WriteLine($"Today: {today:o}");
+            Console.WriteLine($"Now: {now:o}");
+            Console.WriteLine($"From: {from:o}");
+            Console.WriteLine($"To: {to:o}");
+
             // Get all time logs for the user within date range if specified
             var query = _context.TimeLogs.Where(t => t.UserId == userId);
             if (from.HasValue) query = query.Where(t => t.StartTime >= from.Value);
             if (to.HasValue) query = query.Where(t => t.StartTime <= to.Value);
 
             var userLogs = await query.ToListAsync();
+
+            Console.WriteLine($"UserLogs: {userLogs.Count}");
 
             // Convert logs to intervals for merging
             var intervals = userLogs.Select(t => new Interval
@@ -51,6 +58,11 @@ namespace CrossDeviceTracker.Api.Services
             var todayIntervals = intervals.Where(i => i.Start >= today).ToList();
             var todayRawDuration = userLogs.Where(t => t.StartTime >= today).Sum(t => t.DurationSeconds);
             var todayMergedDuration = _timeAnalyticsService.CalculateAttentionTime(todayIntervals);
+
+            Console.WriteLine($"TodayIntervals: {todayIntervals.Count}");
+            Console.WriteLine($"TodayRawDuration: {todayRawDuration}");
+            Console.WriteLine($"TodayMergedDuration: {todayMergedDuration}");
+
             var todayStats = new TodayScreenTime
             {
                 TotalScreenTimeSeconds = todayMergedDuration,
@@ -89,12 +101,16 @@ namespace CrossDeviceTracker.Api.Services
             // Get app count
             var appCount = userLogs.Select(t => t.AppName).Distinct().Count();
 
+            Console.WriteLine($"AppCount: {appCount}");
+
             // Get most used app
             var mostUsedApp = userLogs
                 .GroupBy(t => t.AppName)
                 .Select(g => new { AppName = g.Key, Duration = g.Sum(t => t.DurationSeconds) })
                 .OrderByDescending(g => g.Duration)
                 .FirstOrDefault();
+
+            Console.WriteLine($"MostUsedApp: {mostUsedApp?.AppName}");
 
             var response = new DashboardSummaryResponse
             {
