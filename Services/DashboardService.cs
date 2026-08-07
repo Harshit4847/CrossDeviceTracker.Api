@@ -10,12 +10,18 @@ namespace CrossDeviceTracker.Api.Services
         private readonly AppDbContext _context;
         private readonly IMemoryCache _cache;
         private readonly ITimeAnalyticsService _timeAnalyticsService;
+        private readonly IConfiguration _configuration;
 
-        public DashboardService(AppDbContext context, IMemoryCache cache, ITimeAnalyticsService timeAnalyticsService)
+        public DashboardService(
+            AppDbContext context,
+            IMemoryCache cache,
+            ITimeAnalyticsService timeAnalyticsService,
+            IConfiguration configuration)
         {
             _context = context;
             _cache = cache;
             _timeAnalyticsService = timeAnalyticsService;
+            _configuration = configuration;
         }
 
         public async Task<DashboardSummaryResponse> GetSummaryAsync(Guid userId, DateTime? from = null, DateTime? to = null)
@@ -170,6 +176,13 @@ namespace CrossDeviceTracker.Api.Services
 
         public async Task<List<DeviceUsageResponse>> GetDeviceUsageAsync(Guid userId, DateTime? from = null, DateTime? to = null)
         {
+            var activeWindowMinutes = _configuration.GetValue("Dashboard:DeviceActiveWindowMinutes", 30);
+            var activeThreshold = DateTime.UtcNow.AddMinutes(-activeWindowMinutes);
+
+            var devices = await _context.Devices
+                .Where(d => d.UserId == userId)
+                .ToListAsync();
+
             var query = _context.TimeLogs.Where(t => t.UserId == userId);
 
             if (from.HasValue) query = query.Where(t => t.StartTime >= from.Value);
@@ -177,31 +190,37 @@ namespace CrossDeviceTracker.Api.Services
 
             var logs = await query.ToListAsync();
 
-            // Device usage uses raw duration (not merged) to show per-device time accurately
             var totalDuration = logs.Sum(t => t.DurationSeconds);
 
-            var deviceIds = logs.Select(t => t.DeviceId).Distinct().ToList();
-            var devices = await _context.Devices
-                .Where(d => deviceIds.Contains(d.Id))
-                .ToListAsync();
-
-            var deviceUsage = logs
+            var usageByDevice = logs
                 .GroupBy(t => t.DeviceId)
-                .Select(g => new
+                .ToDictionary(
+                    g => g.Key,
+                    g => new { DurationSeconds = g.Sum(t => t.DurationSeconds), SessionCount = g.Count() });
+
+            var deviceUsage = devices
+                .Select(d =>
                 {
-                    DeviceId = g.Key,
-                    DurationSeconds = g.Sum(t => t.DurationSeconds),
-                    SessionCount = g.Count()
-                })
-                .Join(devices, g => g.DeviceId, d => d.Id, (g, d) => new DeviceUsageResponse
-                {
-                    DeviceName = d.DeviceName,
-                    Platform = d.Platform,
-                    DurationSeconds = g.DurationSeconds,
-                    SessionCount = g.SessionCount,
-                    Percentage = totalDuration > 0 ? (g.DurationSeconds * 100.0) / totalDuration : 0
+                    usageByDevice.TryGetValue(d.Id, out var usage);
+                    var durationSeconds = usage?.DurationSeconds ?? 0;
+                    var sessionCount = usage?.SessionCount ?? 0;
+
+                    return new DeviceUsageResponse
+                    {
+                        DeviceId = d.Id,
+                        DeviceName = d.DeviceName,
+                        Platform = d.Platform,
+                        IsActive = !d.IsRevoked
+                            && d.LastDataSyncAt != null
+                            && d.LastDataSyncAt >= activeThreshold,
+                        LastSyncAt = d.LastDataSyncAt,
+                        DurationSeconds = durationSeconds,
+                        SessionCount = sessionCount,
+                        Percentage = totalDuration > 0 ? (durationSeconds * 100.0) / totalDuration : 0
+                    };
                 })
                 .OrderByDescending(d => d.DurationSeconds)
+                .ThenByDescending(d => d.LastSyncAt)
                 .ToList();
 
             return deviceUsage;
