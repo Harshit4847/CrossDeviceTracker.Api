@@ -1,6 +1,6 @@
 # CrossDeviceTracker.Api
 
-[![CodeFactor](https://www.codefactor.io/repository/github/HarshitYadav/CrossDeviceTracker/badge)](https://www.codefactor.io/repository/github/HarshitYadav/CrossDeviceTracker)
+[![CodeFactor](https://www.codefactor.io/repository/github/harshit4847/crossdevicetracker.api/badge)](https://www.codefactor.io/repository/github/harshit4847/crossdevicetracker.api)
 
 A backend API for tracking screen time and foreground application usage across multiple devices. Built with ASP.NET Core (.NET 10.0), Entity Framework Core, and PostgreSQL.
 
