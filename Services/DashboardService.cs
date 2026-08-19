@@ -174,7 +174,7 @@ namespace CrossDeviceTracker.Api.Services
             return appUsage;
         }
 
-        public async Task<List<DeviceUsageResponse>> GetDeviceUsageAsync(Guid userId, DateTime? from = null, DateTime? to = null)
+        public async Task<DeviceUsageSummaryResponse> GetDeviceUsageAsync(Guid userId, DateTime? from = null, DateTime? to = null)
         {
             var activeWindowMinutes = _configuration.GetValue("Dashboard:DeviceActiveWindowMinutes", 30);
             var activeThreshold = DateTime.UtcNow.AddMinutes(-activeWindowMinutes);
@@ -223,7 +223,11 @@ namespace CrossDeviceTracker.Api.Services
                 .ThenByDescending(d => d.LastSyncAt)
                 .ToList();
 
-            return deviceUsage;
+            return new DeviceUsageSummaryResponse
+            {
+                ActiveCount = deviceUsage.Count(d => d.IsActive),
+                Devices = deviceUsage
+            };
         }
 
         public async Task<TimelineResponse> GetTimelineAsync(Guid userId, DateTime? from = null, DateTime? to = null)

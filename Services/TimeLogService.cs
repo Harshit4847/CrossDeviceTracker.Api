@@ -81,6 +81,7 @@ namespace CrossDeviceTracker.Api.Services
                 CreatedAt = request.CreatedAtUtc
             };
 
+            device.LastDataSyncAt = DateTime.UtcNow;
             _context.TimeLogs.Add(timeLog);
             await _context.SaveChangesAsync();
 
@@ -137,6 +138,7 @@ namespace CrossDeviceTracker.Api.Services
                 timeLogs.Add(timeLog);
             }
 
+            device.LastDataSyncAt = DateTime.UtcNow;
             _context.TimeLogs.AddRange(timeLogs);
             await _context.SaveChangesAsync();
 
