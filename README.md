@@ -1,5 +1,7 @@
 # CrossDeviceTracker.Api
 
+[![CodeFactor](https://www.codefactor.io/repository/github/HarshitYadav/CrossDeviceTracker/badge)](https://www.codefactor.io/repository/github/HarshitYadav/CrossDeviceTracker)
+
 A backend API for tracking screen time and foreground application usage across multiple devices. Built with ASP.NET Core (.NET 10.0), Entity Framework Core, and PostgreSQL.
 
 The system measures active foreground app engagement time on desktop and mobile devices and synchronizes usage data to a centralized backend — similar to how Digital Wellbeing works, but across devices.
