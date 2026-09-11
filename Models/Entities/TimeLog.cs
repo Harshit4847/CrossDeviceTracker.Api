@@ -12,6 +12,8 @@ namespace CrossDeviceTracker.Api.Models.Entities
 
         public Device? Device { get; set; }
 
+        public string ClientSessionId { get; set; } = string.Empty;
+
         public string AppName { get; set; } = string.Empty;
 
         public DateTime StartTime { get; set; }
