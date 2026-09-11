@@ -12,7 +12,7 @@ namespace CrossDeviceTracker.Api.Models.Entities
 
         public Device? Device { get; set; }
 
-        public string ClientSessionId { get; set; } = string.Empty;
+        public string? ClientSessionId { get; set; }
 
         public string AppName { get; set; } = string.Empty;
 
