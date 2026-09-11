@@ -24,176 +24,76 @@ namespace CrossDeviceTracker.Api.Migrations
 
             modelBuilder.Entity("CrossDeviceTracker.Api.Models.Entities.DesktopLinkToken", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<DateTimeOffset>("ExpiresAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("expires_at");
-
-                    b.Property<bool>("IsUsed")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_used");
-
-                    b.Property<byte[]>("TokenHash")
-                        .IsRequired()
-                        .HasColumnType("bytea")
-                        .HasColumnName("token_hash");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
+                    b.Property<Guid>("Id").ValueGeneratedOnAdd().HasColumnType("uuid").HasColumnName("id");
+                    b.Property<DateTimeOffset>("CreatedAt").HasColumnType("timestamp with time zone").HasColumnName("created_at");
+                    b.Property<DateTimeOffset>("ExpiresAt").HasColumnType("timestamp with time zone").HasColumnName("expires_at");
+                    b.Property<bool>("IsUsed").HasColumnType("boolean").HasColumnName("is_used");
+                    b.Property<byte[]>("TokenHash").IsRequired().HasColumnType("bytea").HasColumnName("token_hash");
+                    b.Property<Guid>("UserId").HasColumnType("uuid").HasColumnName("user_id");
                     b.HasKey("Id");
-
-                    b.HasIndex("TokenHash")
-                        .IsUnique();
-
-                    b.HasIndex("UserId")
-                        .IsUnique()
-                        .HasFilter("is_used = false");
-
+                    b.HasIndex("TokenHash").IsUnique();
+                    b.HasIndex("UserId").IsUnique().HasFilter("is_used = false");
                     b.ToTable("desktop_link_tokens", (string)null);
                 });
 
             modelBuilder.Entity("CrossDeviceTracker.Api.Models.Entities.Device", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("DeviceName")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
-
-                    b.Property<string>("InstallationId")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<bool>("IsRevoked")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateTime?>("LastDataSyncAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Platform")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<int>("TokenVersion")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
-
+                    b.Property<Guid>("Id").ValueGeneratedOnAdd().HasColumnType("uuid");
+                    b.Property<DateTime>("CreatedAt").HasColumnType("timestamp with time zone");
+                    b.Property<string>("DeviceName").IsRequired().HasMaxLength(255).HasColumnType("character varying(255)");
+                    b.Property<string>("InstallationId").HasMaxLength(100).HasColumnType("character varying(100)");
+                    b.Property<bool>("IsRevoked").HasColumnType("boolean");
+                    b.Property<DateTime?>("LastDataSyncAt").HasColumnType("timestamp with time zone");
+                    b.Property<string>("Platform").IsRequired().HasMaxLength(100).HasColumnType("character varying(100)");
+                    b.Property<int>("TokenVersion").HasColumnType("integer");
+                    b.Property<Guid>("UserId").HasColumnType("uuid");
                     b.HasKey("Id");
-
-                    b.HasIndex("UserId", "InstallationId")
-                        .IsUnique();
-
+                    b.HasIndex("UserId", "InstallationId").IsUnique();
                     b.ToTable("devices", (string)null);
                 });
 
             modelBuilder.Entity("CrossDeviceTracker.Api.Models.Entities.TimeLog", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("AppName")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("DeviceId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("DurationSeconds")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("EndTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime>("StartTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
-
+                    b.Property<Guid>("Id").ValueGeneratedOnAdd().HasColumnType("uuid");
+                    b.Property<string>("AppName").IsRequired().HasMaxLength(255).HasColumnType("character varying(255)");
+                    b.Property<string>("ClientSessionId").HasMaxLength(200).HasColumnType("character varying(200)");
+                    b.Property<DateTime>("CreatedAt").HasColumnType("timestamp with time zone");
+                    b.Property<Guid>("DeviceId").HasColumnType("uuid");
+                    b.Property<int>("DurationSeconds").HasColumnType("integer");
+                    b.Property<DateTime>("EndTime").HasColumnType("timestamp with time zone");
+                    b.Property<DateTime>("StartTime").HasColumnType("timestamp with time zone");
+                    b.Property<Guid>("UserId").HasColumnType("uuid");
                     b.HasKey("Id");
-
+                    b.HasIndex("DeviceId", "ClientSessionId").IsUnique().HasFilter("\"ClientSessionId\" IS NOT NULL");
                     b.HasIndex("UserId");
-
                     b.ToTable("time_logs", (string)null);
                 });
 
             modelBuilder.Entity("CrossDeviceTracker.Api.Models.Entities.User", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
-
-                    b.Property<string>("PasswordHash")
-                        .IsRequired()
-                        .HasColumnType("text");
-
+                    b.Property<Guid>("Id").ValueGeneratedOnAdd().HasColumnType("uuid");
+                    b.Property<DateTime>("CreatedAt").HasColumnType("timestamp with time zone");
+                    b.Property<string>("Email").IsRequired().HasMaxLength(255).HasColumnType("character varying(255)");
+                    b.Property<string>("PasswordHash").IsRequired().HasColumnType("text");
                     b.HasKey("Id");
-
-                    b.HasIndex("Email")
-                        .IsUnique();
-
+                    b.HasIndex("Email").IsUnique();
                     b.ToTable("users", (string)null);
                 });
 
             modelBuilder.Entity("CrossDeviceTracker.Api.Models.Entities.DesktopLinkToken", b =>
                 {
-                    b.HasOne("CrossDeviceTracker.Api.Models.Entities.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
+                    b.HasOne("CrossDeviceTracker.Api.Models.Entities.User", "User").WithMany().HasForeignKey("UserId").OnDelete(DeleteBehavior.Cascade).IsRequired();
                     b.Navigation("User");
                 });
 
             modelBuilder.Entity("CrossDeviceTracker.Api.Models.Entities.Device", b =>
                 {
-                    b.HasOne("CrossDeviceTracker.Api.Models.Entities.User", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.HasOne("CrossDeviceTracker.Api.Models.Entities.User", null).WithMany().HasForeignKey("UserId").OnDelete(DeleteBehavior.Cascade).IsRequired();
                 });
 
             modelBuilder.Entity("CrossDeviceTracker.Api.Models.Entities.TimeLog", b =>
                 {
-                    b.HasOne("CrossDeviceTracker.Api.Models.Entities.User", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.HasOne("CrossDeviceTracker.Api.Models.Entities.User", null).WithMany().HasForeignKey("UserId").OnDelete(DeleteBehavior.Cascade).IsRequired();
                 });
 #pragma warning restore 612, 618
         }
