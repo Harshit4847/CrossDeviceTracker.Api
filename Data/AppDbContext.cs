@@ -18,144 +18,71 @@ namespace CrossDeviceTracker.Api.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // users table
             modelBuilder.Entity<User>(entity =>
             {
                 entity.ToTable("users");
-
                 entity.HasKey(u => u.Id);
-
-                entity.HasIndex(u => u.Email)
-                      .IsUnique();
-                entity.Property(u => u.Email)
-                .IsRequired()
-                .HasMaxLength(255);
-
-                entity.Property(u => u.PasswordHash)
-                      .IsRequired();
-
+                entity.HasIndex(u => u.Email).IsUnique();
+                entity.Property(u => u.Email).IsRequired().HasMaxLength(255);
+                entity.Property(u => u.PasswordHash).IsRequired();
                 entity.Property(u => u.CreatedAt);
             });
 
-            // time_logs table
             modelBuilder.Entity<TimeLog>(entity =>
             {
                 entity.ToTable("time_logs");
-
                 entity.HasKey(t => t.Id);
-
-                entity.Property(t => t.AppName)
-                      .IsRequired()
-                      .HasMaxLength(255);
-
+                entity.Property(t => t.ClientSessionId).HasMaxLength(200);
+                entity.Property(t => t.AppName).IsRequired().HasMaxLength(255);
                 entity.Property(t => t.StartTime).IsRequired();
                 entity.Property(t => t.EndTime).IsRequired();
                 entity.Property(t => t.DurationSeconds).IsRequired();
                 entity.Property(t => t.CreatedAt);
-
-                entity.HasOne<User>()
-                      .WithMany()
-                      .HasForeignKey(t => t.UserId)
-                      .OnDelete(DeleteBehavior.Cascade);
+                entity.HasIndex(t => new { t.DeviceId, t.ClientSessionId })
+                      .IsUnique()
+                      .HasFilter("\"ClientSessionId\" IS NOT NULL");
+                entity.HasOne<User>().WithMany().HasForeignKey(t => t.UserId).OnDelete(DeleteBehavior.Cascade);
             });
 
-            // devices table
             modelBuilder.Entity<Device>(entity =>
             {
                 entity.ToTable("devices");
                 entity.HasKey(d => d.Id);
-                entity.Property(d => d.DeviceName)
-                      .IsRequired()
-                      .HasMaxLength(255);
-                entity.Property(d => d.Platform)
-                      .IsRequired()
-                      .HasMaxLength(100);
-                entity.Property(d => d.InstallationId)
-                      .HasMaxLength(100);
-                entity.Property(d => d.TokenVersion)
-                      .IsRequired();
-                entity.Property(d => d.IsRevoked)
-                      .IsRequired();
+                entity.Property(d => d.DeviceName).IsRequired().HasMaxLength(255);
+                entity.Property(d => d.Platform).IsRequired().HasMaxLength(100);
+                entity.Property(d => d.InstallationId).HasMaxLength(100);
+                entity.Property(d => d.TokenVersion).IsRequired();
+                entity.Property(d => d.IsRevoked).IsRequired();
                 entity.Property(d => d.LastDataSyncAt);
                 entity.Property(d => d.CreatedAt);
-                entity.HasIndex(d => new { d.UserId, d.InstallationId })
-                      .IsUnique();
-                entity.HasOne<User>()
-                      .WithMany()
-                      .HasForeignKey(d => d.UserId)
-                      .OnDelete(DeleteBehavior.Cascade);
+                entity.HasIndex(d => new { d.UserId, d.InstallationId }).IsUnique();
+                entity.HasOne<User>().WithMany().HasForeignKey(d => d.UserId).OnDelete(DeleteBehavior.Cascade);
             });
 
-            // desktop_link_tokens table
             modelBuilder.Entity<DesktopLinkToken>(entity =>
             {
                 entity.ToTable("desktop_link_tokens");
-
                 entity.HasKey(t => t.Id);
-
-                entity.Property(t => t.Id)
-                      .HasColumnName("id");
-
-                entity.Property(t => t.UserId)
-                      .HasColumnName("user_id")
-                      .IsRequired();
-
-                entity.Property(t => t.TokenHash)
-                      .HasColumnName("token_hash")
-                      .IsRequired();
-
-                entity.Property(t => t.ExpiresAt)
-                      .HasColumnName("expires_at")
-                      .IsRequired();
-
-                entity.Property(t => t.CreatedAt)
-                      .HasColumnName("created_at")
-                      .IsRequired();
-
-                entity.Property(t => t.IsUsed)
-                      .HasColumnName("is_used")
-                      .IsRequired();
-
-                // TokenHash must be unique
-                entity.HasIndex(t => t.TokenHash)
-                      .IsUnique();
-
-                // One unused token per user (Postgres partial unique index)
-                entity.HasIndex(t => t.UserId)
-                      .IsUnique()
-                      .HasFilter("is_used = false");
-
-                // FK to users
-                entity.HasOne(t => t.User)
-                      .WithMany()
-                      .HasForeignKey(t => t.UserId)
-                      .OnDelete(DeleteBehavior.Cascade);
+                entity.Property(t => t.Id).HasColumnName("id");
+                entity.Property(t => t.UserId).HasColumnName("user_id").IsRequired();
+                entity.Property(t => t.TokenHash).HasColumnName("token_hash").IsRequired();
+                entity.Property(t => t.ExpiresAt).HasColumnName("expires_at").IsRequired();
+                entity.Property(t => t.CreatedAt).HasColumnName("created_at").IsRequired();
+                entity.Property(t => t.IsUsed).HasColumnName("is_used").IsRequired();
+                entity.HasIndex(t => t.TokenHash).IsUnique();
+                entity.HasIndex(t => t.UserId).IsUnique().HasFilter("is_used = false");
+                entity.HasOne(t => t.User).WithMany().HasForeignKey(t => t.UserId).OnDelete(DeleteBehavior.Cascade);
             });
 
-            // app_aliases table
             modelBuilder.Entity<AppAlias>(entity =>
             {
                 entity.ToTable("app_aliases");
-
                 entity.HasKey(a => a.Id);
-
-                entity.Property(a => a.CanonicalName)
-                      .IsRequired()
-                      .HasMaxLength(255);
-
-                entity.Property(a => a.Alias)
-                      .IsRequired()
-                      .HasMaxLength(255);
-
-                entity.Property(a => a.Platform)
-                      .IsRequired()
-                      .HasMaxLength(100);
-
+                entity.Property(a => a.CanonicalName).IsRequired().HasMaxLength(255);
+                entity.Property(a => a.Alias).IsRequired().HasMaxLength(255);
+                entity.Property(a => a.Platform).IsRequired().HasMaxLength(100);
                 entity.Property(a => a.CreatedAt);
-
-                // Alias must be unique per platform
-                entity.HasIndex(a => new { a.Alias, a.Platform })
-                      .IsUnique();
+                entity.HasIndex(a => new { a.Alias, a.Platform }).IsUnique();
             });
         }
     }
