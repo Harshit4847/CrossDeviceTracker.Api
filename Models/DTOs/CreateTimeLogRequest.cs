@@ -4,6 +4,8 @@ namespace CrossDeviceTracker.Api.Models.DTOs
 {
     public class CreateTimeLogRequest
     {
+        public string? ClientSessionId { get; set; }
+
         public string? PackageName { get; set; }
 
         public string? AppName { get; set; }
