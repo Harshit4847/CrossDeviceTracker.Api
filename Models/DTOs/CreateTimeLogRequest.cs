@@ -1,10 +1,8 @@
-using System;
-
 namespace CrossDeviceTracker.Api.Models.DTOs
 {
     public class CreateTimeLogRequest
     {
-        public string? PackageName { get; set; }
+        public required string PackageName { get; set; }
 
         public string? AppName { get; set; }
 
@@ -15,5 +13,7 @@ namespace CrossDeviceTracker.Api.Models.DTOs
         public int DurationSeconds { get; set; }
 
         public DateTime CreatedAtUtc { get; set; }
+        
+        public required string ClientSessionId { get; set; }
     }
 }

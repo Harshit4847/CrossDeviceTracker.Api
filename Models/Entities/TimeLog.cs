@@ -21,6 +21,8 @@ namespace CrossDeviceTracker.Api.Models.Entities
         public int DurationSeconds { get; set; }
 
         public DateTime CreatedAt { get; set; }
+        
+        public required string ClientSessionId { get; set; }
     }
 }
 

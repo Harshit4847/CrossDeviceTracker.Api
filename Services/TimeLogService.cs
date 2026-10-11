@@ -1,9 +1,10 @@
-﻿using System;
-using CrossDeviceTracker.Api.Data;
+﻿using CrossDeviceTracker.Api.Data;
 using CrossDeviceTracker.Api.Models.DTOs;
 using CrossDeviceTracker.Api.Models.Entities;
 using Microsoft.EntityFrameworkCore;
 using CrossDeviceTracker.Api.Exceptions;
+using Npgsql;
+using System.Text;
 
 namespace CrossDeviceTracker.Api.Services
 {
@@ -78,7 +79,8 @@ namespace CrossDeviceTracker.Api.Services
                 StartTime = request.StartTimeUtc,
                 EndTime = request.EndTimeUtc,
                 DurationSeconds = request.DurationSeconds,
-                CreatedAt = request.CreatedAtUtc
+                CreatedAt = request.CreatedAtUtc,
+                ClientSessionId = request.ClientSessionId
             };
 
             device.LastDataSyncAt = DateTime.UtcNow;
@@ -88,7 +90,8 @@ namespace CrossDeviceTracker.Api.Services
             return MapToTimeLogResponse(timeLog);
         }
 
-        public async Task<List<TimeLogResponse>> CreateTimeLogsBatch(Guid userId, List<CreateTimeLogRequest> requests)
+        public async Task<CreateTimeLogsBatchResponse> CreateTimeLogsBatch(Guid userId,
+            List<CreateTimeLogRequest> requests)
         {
             if (requests == null || requests.Count == 0)
             {
@@ -98,6 +101,9 @@ namespace CrossDeviceTracker.Api.Services
             var deviceId = _currentDeviceService.DeviceId;
 
             var device = await _context.Devices.FirstOrDefaultAsync(d => d.Id == deviceId);
+            
+            Console.WriteLine($"Service DeviceId: {deviceId}");
+            Console.WriteLine($"Found Device: {device != null}");
 
             if (device == null)
             {
@@ -109,40 +115,72 @@ namespace CrossDeviceTracker.Api.Services
                 throw new ForbiddenException("Device does not belong to the current user.");
             }
 
-            var timeLogs = new List<TimeLog>();
-
             foreach (var request in requests)
             {
                 if (request == null)
                 {
                     throw new ArgumentNullException(nameof(request));
                 }
-
-                if (request.DurationSeconds <= 0)
-                {
-                    throw new ArgumentException("DurationSeconds must be greater than 0", nameof(request.DurationSeconds));
-                }
-
-                var timeLog = new TimeLog
-                {
-                    Id = Guid.NewGuid(),
-                    UserId = userId,
-                    DeviceId = deviceId,
-                    AppName = string.IsNullOrWhiteSpace(request.AppName) ? request.PackageName : request.AppName,
-                    StartTime = request.StartTimeUtc,
-                    EndTime = request.EndTimeUtc,
-                    DurationSeconds = request.DurationSeconds,
-                    CreatedAt = request.CreatedAtUtc
-                };
-
-                timeLogs.Add(timeLog);
             }
 
-            device.LastDataSyncAt = DateTime.UtcNow;
-            _context.TimeLogs.AddRange(timeLogs);
-            await _context.SaveChangesAsync();
+            var distinct = requests.DistinctBy(request => request.ClientSessionId).ToList();
+            var response = new CreateTimeLogsBatchResponse { AcceptedClientSessionIds = new List<string>() };
 
-            return timeLogs.Select(MapToTimeLogResponse).ToList();
+            foreach (var request in distinct)
+            {
+                if (request.DurationSeconds <= 0)
+                {
+                    throw new ArgumentException("DurationSeconds must be greater than 0",
+                        nameof(request.DurationSeconds));
+                }
+
+                response.AcceptedClientSessionIds.Add(request.ClientSessionId);
+            }
+
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+            var sql = new StringBuilder();
+            var parameters = new List<NpgsqlParameter>();
+
+            sql.Append(
+                "INSERT INTO time_logs (\"Id\", \"UserId\", \"DeviceId\", \"AppName\", \"StartTime\", \"EndTime\", \"DurationSeconds\", \"CreatedAt\", \"ClientSessionId\") VALUES ");
+            foreach (var request in distinct)
+            {
+                var index = distinct.IndexOf(request);
+                sql.Append("(");
+                sql.Append(
+                    $"@id{index}, @userId{index}, @deviceId{index}, @appName{index}, @startTime{index}, @endTime{index}, @durationSeconds{index}, @createdAt{index}, @clientSessionId{index}");
+                sql.Append(")");
+                parameters.Add(new NpgsqlParameter($"@id{index}", Guid.NewGuid()));
+                parameters.Add(new NpgsqlParameter($"@userId{index}", userId));
+                parameters.Add(new NpgsqlParameter($"@deviceId{index}", deviceId));
+                parameters.Add(new NpgsqlParameter($"@appName{index}",
+                    string.IsNullOrWhiteSpace(request.AppName) ? request.PackageName : request.AppName));
+                parameters.Add(new NpgsqlParameter($"@startTime{index}", request.StartTimeUtc));
+                parameters.Add(new NpgsqlParameter($"@endTime{index}", request.EndTimeUtc));
+                parameters.Add(new NpgsqlParameter($"@durationSeconds{index}", request.DurationSeconds));
+                parameters.Add(new NpgsqlParameter($"@createdAt{index}", request.CreatedAtUtc));
+                parameters.Add(new NpgsqlParameter($"@clientSessionId{index}", request.ClientSessionId));
+                sql.Append(",");
+            }
+
+            sql.Length--;
+            sql.Append(" ON CONFLICT (\"ClientSessionId\", \"DeviceId\") DO NOTHING");
+
+
+            device.LastDataSyncAt = DateTime.UtcNow;
+            try
+            {
+                await _context.SaveChangesAsync();
+                await _context.Database.ExecuteSqlRawAsync(sql.ToString(), parameters);
+                await transaction.CommitAsync();
+            }
+            catch (Exception e)
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+
+            return response;
         }
 
         private int GetFinalLimit(int? limit)
@@ -169,4 +207,3 @@ namespace CrossDeviceTracker.Api.Services
         }
     }
 }
-

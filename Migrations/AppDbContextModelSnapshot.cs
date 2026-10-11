@@ -22,6 +22,38 @@ namespace CrossDeviceTracker.Api.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("CrossDeviceTracker.Api.Models.Entities.AppAlias", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Alias")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<string>("CanonicalName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Platform")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Alias", "Platform")
+                        .IsUnique();
+
+                    b.ToTable("app_aliases", (string)null);
+                });
+
             modelBuilder.Entity("CrossDeviceTracker.Api.Models.Entities.DesktopLinkToken", b =>
                 {
                     b.Property<Guid>("Id")
@@ -116,6 +148,11 @@ namespace CrossDeviceTracker.Api.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
 
+                    b.Property<string>("ClientSessionId")
+                        .IsRequired()
+                        .HasMaxLength(36)
+                        .HasColumnType("character varying(36)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -136,7 +173,12 @@ namespace CrossDeviceTracker.Api.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("DeviceId");
+
                     b.HasIndex("UserId");
+
+                    b.HasIndex("ClientSessionId", "DeviceId")
+                        .IsUnique();
 
                     b.ToTable("time_logs", (string)null);
                 });
@@ -189,11 +231,19 @@ namespace CrossDeviceTracker.Api.Migrations
 
             modelBuilder.Entity("CrossDeviceTracker.Api.Models.Entities.TimeLog", b =>
                 {
+                    b.HasOne("CrossDeviceTracker.Api.Models.Entities.Device", "Device")
+                        .WithMany()
+                        .HasForeignKey("DeviceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("CrossDeviceTracker.Api.Models.Entities.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Device");
                 });
 #pragma warning restore 612, 618
         }

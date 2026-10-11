@@ -57,6 +57,12 @@ namespace CrossDeviceTracker.Api.Data
                       .WithMany()
                       .HasForeignKey(t => t.UserId)
                       .OnDelete(DeleteBehavior.Cascade);
+                
+                entity.Property(t => t.ClientSessionId)
+                      .IsRequired()
+                      .HasMaxLength(36);
+                  
+                entity.HasIndex(t => new {t.ClientSessionId , t.DeviceId}).IsUnique();
             });
 
             // devices table
