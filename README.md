@@ -222,6 +222,7 @@ Required settings in `appsettings.Development.json`:
 ## Related Projects
 
 - [CrossDeviceTracker.Desktop](https://github.com/Harshit4847/CrossDeviceTracker.Desktop) — Windows desktop client (foreground window tracking, offline-first sync)
+- [CrossDeviceTracker.Linux](https://github.com/Harshit4847/CrossDeviceTracker.Linux) — Linux desktop client (`cdt` command: X11/Sway/Hyprland foreground tracking, idle detection, offline-first sync, systemd user service)
 
 ---
 
