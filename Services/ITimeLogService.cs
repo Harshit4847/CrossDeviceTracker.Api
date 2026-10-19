@@ -1,5 +1,4 @@
 ﻿using CrossDeviceTracker.Api.Models.DTOs;
-using System.Collections.Generic;
 
 namespace CrossDeviceTracker.Api.Services
 {
