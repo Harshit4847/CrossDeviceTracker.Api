@@ -141,7 +141,8 @@ CrossDeviceTracker.Api/
 ├── Exceptions/             # Custom exceptions & middleware
 ├── Migrations/             # EF Core migrations
 ├── Program.cs              # Entry point
-└── appsettings.json        # Configuration
+├── appsettings.json        # Configuration
+└── CrossDeviceTracker.Linux/   # Linux desktop client (see its own README)
 ```
 
 ---
@@ -222,6 +223,7 @@ Required settings in `appsettings.Development.json`:
 ## Related Projects
 
 - [CrossDeviceTracker.Desktop](https://github.com/Harshit4847/CrossDeviceTracker.Desktop) — Windows desktop client (foreground window tracking, offline-first sync)
+- [CrossDeviceTracker.Linux](CrossDeviceTracker.Linux/) — Linux desktop client in this repo (`cdt` command: X11/Sway/Hyprland foreground tracking, idle detection, offline-first sync, systemd user service). See [CrossDeviceTracker.Linux/README.md](CrossDeviceTracker.Linux/README.md).
 
 ---
 

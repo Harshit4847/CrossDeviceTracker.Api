@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "crossdevicetracker-linux"
+version = "1.0.0"
+description = "Linux desktop client for CrossDeviceTracker.Api: foreground app usage tracking with offline-first sync"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Harshit Yadav", email = "official.harshit@outlook.com" }]
+keywords = ["screen-time", "usage-tracker", "linux", "x11", "wayland", "sway", "hyprland"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Desktop Environment",
+    "Topic :: System :: Monitoring",
+]
+# The client is deliberately dependency free: stdlib only, so it runs on any
+# Linux box with Python 3.10+ (no pip packages, no network needed to install).
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/Harshit4847/CrossDeviceTracker.Api"
+Documentation = "https://github.com/Harshit4847/CrossDeviceTracker.Api/tree/main/CrossDeviceTracker.Linux"
+
+[project.scripts]
+cdt = "cdt.cli:main"
+
+[tool.setuptools]
+packages = ["cdt"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
